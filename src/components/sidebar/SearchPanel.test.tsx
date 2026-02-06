@@ -20,7 +20,7 @@ vi.mock('../../services/search', () => ({
 }));
 
 vi.mock('../../utils', () => ({
-  debounce: (fn: Function) => fn,
+  debounce: (fn: (...args: string[]) => void) => fn,
 }));
 
 describe('SearchPanel', () => {

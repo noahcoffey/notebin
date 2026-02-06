@@ -32,9 +32,11 @@ export function WikilinkAutocomplete({
   ).slice(0, 10);
 
   // Reset selection when query changes
-  useEffect(() => {
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (prevQuery !== query) {
+    setPrevQuery(query);
     setSelectedIndex(0);
-  }, [query]);
+  }
 
   // Scroll selected item into view
   useEffect(() => {

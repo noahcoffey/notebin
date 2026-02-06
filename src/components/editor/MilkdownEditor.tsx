@@ -11,6 +11,7 @@ import { nord } from '@milkdown/theme-nord';
 import { $prose } from '@milkdown/utils';
 import { Plugin, PluginKey } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
+import { Node as ProsemirrorNode } from '@milkdown/prose/model';
 import type { Note } from '../../types';
 import { useNoteStore, useWorkspaceStore, useSettingsStore } from '../../store';
 import { updateNoteMetadata, extractLinks, getContextForLink } from '../../services/parser';
@@ -56,10 +57,10 @@ const wikilinkPlugin = $prose(() => {
     },
   });
 
-  function buildDecorations(doc: any): DecorationSet {
+  function buildDecorations(doc: ProsemirrorNode): DecorationSet {
     const decorations: Decoration[] = [];
 
-    doc.descendants((node: any, pos: number) => {
+    doc.descendants((node: ProsemirrorNode, pos: number) => {
       if (node.isText) {
         const text = node.text || '';
         let match;
@@ -353,7 +354,9 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
 
   // Keep autocomplete state in a ref for the selection handler
   const autocompleteRef = useRef(autocomplete);
-  autocompleteRef.current = autocomplete;
+  useEffect(() => {
+    autocompleteRef.current = autocomplete;
+  }, [autocomplete]);
 
   // Handle autocomplete selection
   const handleAutocompleteSelect = useCallback((title: string) => {

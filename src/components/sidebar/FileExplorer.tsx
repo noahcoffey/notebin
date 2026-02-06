@@ -54,7 +54,7 @@ export function FileExplorer() {
 
   const handleKeyDown = (e: React.KeyboardEvent, type: 'note' | 'folder') => {
     if (e.key === 'Enter') {
-      type === 'note' ? handleCreateNote() : handleCreateFolder();
+      if (type === 'note') { handleCreateNote(); } else { handleCreateFolder(); }
     } else if (e.key === 'Escape') {
       setNewItemName('');
       setShowNewNote(false);

@@ -14,20 +14,31 @@ export function BacklinksPanel() {
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
 
-  useEffect(() => {
-    if (!activeNote) {
+  const activeNoteId = activeNote?.id;
+  const [prevNoteId, setPrevNoteId] = useState(activeNoteId);
+  if (activeNoteId !== prevNoteId) {
+    setPrevNoteId(activeNoteId);
+    if (!activeNoteId) {
       setBacklinks([]);
-      return;
+      setLoading(false);
+    } else {
+      setLoading(true);
     }
+  }
 
-    setLoading(true);
-    backlinkStorage.getByTarget(activeNote.id)
+  useEffect(() => {
+    if (!activeNoteId) return;
+    let cancelled = false;
+    backlinkStorage.getByTarget(activeNoteId)
       .then(links => {
-        setBacklinks(links);
+        if (!cancelled) setBacklinks(links);
       })
       .catch(err => console.error('Error fetching backlinks:', err))
-      .finally(() => setLoading(false));
-  }, [activeNote]);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeNoteId]);
 
   if (!activeNote) {
     return (

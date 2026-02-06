@@ -31,9 +31,11 @@ export function QuickSwitcher() {
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (prevQuery !== query) {
+    setPrevQuery(query);
     setSelectedIndex(0);
-  }, [query]);
+  }
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
     switch (e.key) {

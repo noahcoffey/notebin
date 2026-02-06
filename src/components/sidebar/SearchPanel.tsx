@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNoteStore, useWorkspaceStore } from '../../store';
 import { searchService } from '../../services/search';
 import type { SearchResult } from '../../services/search';
@@ -20,8 +20,8 @@ export function SearchPanel() {
   }, [notes]);
 
   // Debounced search function
-  const performSearch = useCallback(
-    debounce((searchQuery: string) => {
+  const performSearch = useMemo(
+    () => debounce((searchQuery: string) => {
       if (!searchQuery.trim()) {
         setResults([]);
         setIsSearching(false);
