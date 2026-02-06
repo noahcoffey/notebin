@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNoteStore, useWorkspaceStore } from '../../store';
+import { useNoteStore, useWorkspaceStore, useSettingsStore } from '../../store';
 import type { FileTreeItem } from '../../types';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock } from 'lucide-react';
 import { ContextMenu, type ContextMenuItem } from '../common/ContextMenu';
 
 interface ContextMenuState {
@@ -11,10 +11,16 @@ interface ContextMenuState {
 }
 
 export function FileExplorer() {
-  const { getFileTree, createNote, createFolder, toggleFolder, moveNote, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
+  const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
   const { openNote, closeTab, tabs, activeTabId } = useWorkspaceStore();
+  const { showRecentNotes } = useSettingsStore();
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNoteId = activeTab?.noteId || null;
+
+  // Get the 5 most recently modified notes
+  const recentNotes = [...notes]
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 5);
   const [showNewNote, setShowNewNote] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -156,6 +162,32 @@ export function FileExplorer() {
 
   return (
     <div className="py-2">
+      {/* Recent Notes Section */}
+      {showRecentNotes && recentNotes.length > 0 && (
+        <div className="mb-2">
+          <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider">
+            <Clock size={12} />
+            <span className="leading-none py-1">Recent</span>
+          </div>
+          <div>
+            {recentNotes.map(note => (
+              <div
+                key={note.id}
+                className={`flex items-center gap-1 px-2 py-1 text-sm cursor-pointer hover:bg-bg-hover ${
+                  note.id === activeNoteId ? 'bg-bg-hover text-accent' : 'text-text-primary'
+                }`}
+                style={{ paddingLeft: 28 }}
+                onClick={() => openNote(note.id, note.title)}
+              >
+                <File size={16} className={`shrink-0 ${note.id === activeNoteId ? 'text-accent' : 'text-text-muted'}`} />
+                <span className="truncate">{note.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All Notes Section */}
       <div className="flex items-center justify-between px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider">
         <span className="leading-none py-1">Notes</span>
         <div className="flex items-center gap-1">

@@ -9,6 +9,7 @@ interface SettingsState {
   spellCheck: boolean;
   autoSave: boolean;
   autoSaveInterval: number;
+  showRecentNotes: boolean;
 
   setEditorFontSize: (size: number) => void;
   setEditorLineHeight: (height: number) => void;
@@ -17,6 +18,7 @@ interface SettingsState {
   setSpellCheck: (enabled: boolean) => void;
   setAutoSave: (enabled: boolean) => void;
   setAutoSaveInterval: (interval: number) => void;
+  setShowRecentNotes: (show: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -29,6 +31,7 @@ export const useSettingsStore = create<SettingsState>()(
       spellCheck: true,
       autoSave: true,
       autoSaveInterval: 5000,
+      showRecentNotes: true,
 
       setEditorFontSize: (size: number) => set({ editorFontSize: Math.max(12, Math.min(24, size)) }),
       setEditorLineHeight: (height: number) => set({ editorLineHeight: Math.max(1.2, Math.min(2.4, height)) }),
@@ -37,6 +40,7 @@ export const useSettingsStore = create<SettingsState>()(
       setSpellCheck: (enabled: boolean) => set({ spellCheck: enabled }),
       setAutoSave: (enabled: boolean) => set({ autoSave: enabled }),
       setAutoSaveInterval: (interval: number) => set({ autoSaveInterval: Math.max(1000, Math.min(60000, interval)) }),
+      setShowRecentNotes: (show: boolean) => set({ showRecentNotes: show }),
     }),
     {
       name: 'noted-settings',

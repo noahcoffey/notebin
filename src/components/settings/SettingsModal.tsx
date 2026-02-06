@@ -14,12 +14,14 @@ export function SettingsModal() {
     spellCheck,
     autoSave,
     autoSaveInterval,
+    showRecentNotes,
     setEditorFontSize,
     setEditorLineHeight,
     setShowLineNumbers,
     setSpellCheck,
     setAutoSave,
     setAutoSaveInterval,
+    setShowRecentNotes,
   } = useSettingsStore();
   const { notes, folders } = useNoteStore();
 
@@ -183,6 +185,22 @@ export function SettingsModal() {
                         type="checkbox"
                         checked={spellCheck}
                         onChange={e => setSpellCheck(e.target.checked)}
+                        className="w-4 h-4 accent-accent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-text-primary mb-3">Sidebar</h3>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-text-secondary">Show Recent Notes</label>
+                      <input
+                        type="checkbox"
+                        checked={showRecentNotes}
+                        onChange={e => setShowRecentNotes(e.target.checked)}
                         className="w-4 h-4 accent-accent"
                       />
                     </div>
