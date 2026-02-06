@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { gfm } from '@milkdown/preset-gfm';
@@ -16,6 +16,7 @@ import { useNoteStore, useWorkspaceStore, useSettingsStore } from '../../store';
 import { updateNoteMetadata, extractLinks, getContextForLink } from '../../services/parser';
 import { backlinkStorage } from '../../services/storage';
 import { debounce } from '../../utils';
+import { WikilinkAutocomplete } from './WikilinkAutocomplete';
 import '@milkdown/theme-nord/style.css';
 import './milkdown.css';
 
@@ -115,6 +116,10 @@ function convertLinesToTaskList(markdown: string, fromLine: number, toLine: numb
 // Store for accessing editor instance from plugin
 let editorInstanceForPlugin: Editor | null = null;
 
+// Store for accessing ProseMirror view directly
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let editorViewForAutocomplete: any = null;
+
 // Custom plugin for keyboard shortcuts and task list click handling
 const taskListPlugin = $prose(() => {
   return new Plugin({
@@ -125,26 +130,30 @@ const taskListPlugin = $prose(() => {
         if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 't') {
           event.preventDefault();
 
-          if (!editorInstanceForPlugin) return false;
+          if (!editorInstanceForPlugin || !editorViewForAutocomplete) return false;
 
-          const { state } = view;
-          const { selection, doc } = state;
-          const { from, to } = selection;
+          try {
+            const { state } = view;
+            const { selection, doc } = state;
+            const { from, to } = selection;
 
-          // Get current markdown
-          const currentMarkdown = editorInstanceForPlugin.action(getMarkdown());
+            // Get current markdown
+            const currentMarkdown = editorInstanceForPlugin.action(getMarkdown());
 
-          // Calculate line numbers from position
-          const textBeforeFrom = doc.textBetween(0, from, '\n');
-          const textBeforeTo = doc.textBetween(0, to, '\n');
-          const fromLine = (textBeforeFrom.match(/\n/g) || []).length;
-          const toLine = (textBeforeTo.match(/\n/g) || []).length;
+            // Calculate line numbers from position
+            const textBeforeFrom = doc.textBetween(0, from, '\n');
+            const textBeforeTo = doc.textBetween(0, to, '\n');
+            const fromLine = (textBeforeFrom.match(/\n/g) || []).length;
+            const toLine = (textBeforeTo.match(/\n/g) || []).length;
 
-          // Convert the lines
-          const newMarkdown = convertLinesToTaskList(currentMarkdown, fromLine, toLine);
+            // Convert the lines
+            const newMarkdown = convertLinesToTaskList(currentMarkdown, fromLine, toLine);
 
-          if (newMarkdown !== currentMarkdown) {
-            editorInstanceForPlugin.action(replaceAll(newMarkdown));
+            if (newMarkdown !== currentMarkdown) {
+              editorInstanceForPlugin.action(replaceAll(newMarkdown));
+            }
+          } catch {
+            // Editor not fully ready
           }
 
           return true;
@@ -167,6 +176,16 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   const [loading, getInstance] = useInstance();
 
   const activeTab = tabs.find(t => t.id === activeTabId);
+
+  // Autocomplete state
+  const [autocomplete, setAutocomplete] = useState<{
+    show: boolean;
+    query: string;
+    position: { top: number; left: number };
+    from: number;
+    to: number;
+  }>({ show: false, query: '', position: { top: 0, left: 0 }, from: 0, to: 0 });
+
 
   const saveNote = useCallback(
     async (content: string) => {
@@ -234,8 +253,9 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
             }
           })
           .mounted((ctx) => {
-            // Focus editor on mount
+            // Focus editor on mount and store view reference
             const view = ctx.get(editorViewCtx);
+            editorViewForAutocomplete = view;
             view.focus();
           });
       })
@@ -254,10 +274,120 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     if (editor) {
       editorInstanceForPlugin = editor;
     }
+  }, [get]);
+
+  // Clean up on unmount only
+  useEffect(() => {
     return () => {
       editorInstanceForPlugin = null;
+      editorViewForAutocomplete = null;
     };
-  }, [get]);
+  }, []);
+
+  // Autocomplete detection - watch for [[ pattern using DOM events
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const checkForAutocomplete = () => {
+      const view = editorViewForAutocomplete;
+      if (!view) return;
+
+      try {
+        const { state } = view;
+        const { selection } = state;
+        const { $from } = selection;
+
+        // Get text before cursor on current line
+        const textBefore = $from.parent.textContent.slice(0, $from.parentOffset);
+
+        // Check for [[ pattern without closing ]]
+        const match = textBefore.match(/\[\[([^\]]*?)$/);
+
+        if (match) {
+          const query = match[1];
+          const from = $from.pos - query.length;
+          const to = $from.pos;
+
+          // Get cursor position for popup placement
+          const coords = view.coordsAtPos($from.pos);
+
+          setAutocomplete({
+            show: true,
+            query,
+            position: {
+              top: coords.bottom + 4,
+              left: coords.left,
+            },
+            from: from - 2, // Include [[
+            to,
+          });
+        } else {
+          setAutocomplete(prev => prev.show ? { show: false, query: '', position: { top: 0, left: 0 }, from: 0, to: 0 } : prev);
+        }
+      } catch {
+        // View may be destroyed, ignore errors
+      }
+    };
+
+    // Listen for input events
+    const handleInput = () => {
+      checkForAutocomplete();
+    };
+
+    // Also check on keyup for more reliable detection
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === '[') {
+        setTimeout(() => checkForAutocomplete(), 0);
+      }
+    };
+
+    wrapper.addEventListener('input', handleInput);
+    wrapper.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      wrapper.removeEventListener('input', handleInput);
+      wrapper.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []); // No dependencies - uses refs and module variables
+
+  // Keep autocomplete state in a ref for the selection handler
+  const autocompleteRef = useRef(autocomplete);
+  autocompleteRef.current = autocomplete;
+
+  // Handle autocomplete selection
+  const handleAutocompleteSelect = useCallback((title: string) => {
+    const view = editorViewForAutocomplete;
+    if (!view) return;
+
+    const { state } = view;
+    const { from, to } = autocompleteRef.current;
+
+    // Create the wikilink text
+    const wikilinkText = `[[${title}]]`;
+
+    try {
+      // Replace from [[ to cursor with the complete wikilink
+      const tr = state.tr.replaceWith(
+        from,
+        to,
+        state.schema.text(wikilinkText)
+      );
+
+      view.dispatch(tr);
+      view.focus();
+    } catch (err) {
+      console.error('Error inserting wikilink:', err);
+    }
+
+    // Close autocomplete
+    setAutocomplete({ show: false, query: '', position: { top: 0, left: 0 }, from: 0, to: 0 });
+  }, []);
+
+  // Close autocomplete
+  const handleAutocompleteClose = useCallback(() => {
+    setAutocomplete({ show: false, query: '', position: { top: 0, left: 0 }, from: 0, to: 0 });
+  }, []);
 
   // Handle wikilink clicks
   useEffect(() => {
@@ -284,11 +414,15 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   // Update content when note content changes externally
   useEffect(() => {
     const editor = getInstance();
-    if (!editor || loading) return;
+    if (!editor || loading || !editorViewForAutocomplete) return;
 
-    const currentMarkdown = editor.action(getMarkdown());
-    if (currentMarkdown !== note.content) {
-      editor.action(replaceAll(note.content));
+    try {
+      const currentMarkdown = editor.action(getMarkdown());
+      if (currentMarkdown !== note.content) {
+        editor.action(replaceAll(note.content));
+      }
+    } catch {
+      // Editor not fully ready yet
     }
   }, [note.content, getInstance, loading]);
 
@@ -410,9 +544,24 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     return () => wrapper.removeEventListener('click', handleClick);
   }, [getInstance]);
 
+  // Prepare notes list for autocomplete
+  const notesForAutocomplete = useMemo(() =>
+    notes.map(n => ({ id: n.id, title: n.title, path: n.path })),
+    [notes]
+  );
+
   return (
     <div ref={wrapperRef} className="milkdown-editor-wrapper h-full w-full overflow-auto">
       <Milkdown />
+      {autocomplete.show && (
+        <WikilinkAutocomplete
+          notes={notesForAutocomplete}
+          query={autocomplete.query}
+          position={autocomplete.position}
+          onSelect={handleAutocompleteSelect}
+          onClose={handleAutocompleteClose}
+        />
+      )}
     </div>
   );
 }

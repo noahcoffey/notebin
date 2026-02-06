@@ -23,7 +23,6 @@ import {
   frontmatterPlugin,
   frontmatterTheme,
 } from './extensions';
-import { wikilinkAutocomplete } from './WikilinkAutocomplete';
 
 interface MarkdownEditorProps {
   note: Note;
@@ -110,7 +109,6 @@ export function MarkdownEditor({ note }: MarkdownEditorProps) {
       editorTheme,
       wikilinkPlugin,
       wikilinkTheme,
-      wikilinkAutocomplete,
       createWikilinkClickHandler(handleWikilinkNavigate),
       mathPlugin,
       mathTheme,
