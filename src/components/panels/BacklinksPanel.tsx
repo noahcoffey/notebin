@@ -59,28 +59,46 @@ export function BacklinksPanel() {
     );
   }
 
+  // Group backlinks by source note
+  const groupedBacklinks = backlinks.reduce((acc, backlink) => {
+    if (!acc[backlink.sourceNoteId]) {
+      acc[backlink.sourceNoteId] = {
+        sourceNoteId: backlink.sourceNoteId,
+        count: 0,
+        context: backlink.context, // Use first context as preview
+      };
+    }
+    acc[backlink.sourceNoteId].count++;
+    return acc;
+  }, {} as Record<string, { sourceNoteId: string; count: number; context?: string }>);
+
+  const uniqueBacklinks = Object.values(groupedBacklinks);
+
   return (
     <div className="py-2">
       <div className="px-3 py-1 text-xs text-text-muted">
-        {backlinks.length} backlink{backlinks.length !== 1 ? 's' : ''}
+        {uniqueBacklinks.length} note{uniqueBacklinks.length !== 1 ? 's' : ''} linking here
       </div>
-      {backlinks.map((backlink, index) => {
-        const sourceNote = notes.find(n => n.id === backlink.sourceNoteId);
+      {uniqueBacklinks.map((grouped) => {
+        const sourceNote = notes.find(n => n.id === grouped.sourceNoteId);
         if (!sourceNote) return null;
 
         return (
           <div
-            key={`${backlink.sourceNoteId}-${index}`}
+            key={grouped.sourceNoteId}
             className="px-3 py-2 hover:bg-bg-hover cursor-pointer"
             onClick={() => openNote(sourceNote.id, sourceNote.title)}
           >
             <div className="flex items-center gap-2 text-sm text-text-primary">
               <FileText size={14} className="text-text-muted shrink-0" />
               <span className="truncate">{sourceNote.title}</span>
+              {grouped.count > 1 && (
+                <span className="text-xs text-text-muted">×{grouped.count}</span>
+              )}
             </div>
-            {backlink.context && (
+            {grouped.context && (
               <p className="mt-1 text-xs text-text-muted line-clamp-2 pl-5">
-                {backlink.context}
+                {grouped.context}
               </p>
             )}
           </div>
