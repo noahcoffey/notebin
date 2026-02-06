@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { noteStorage } from '../../services/storage';
 import type { Note } from '../../types';
 import { FileText, ArrowLeft, Loader2 } from 'lucide-react';
@@ -95,7 +96,7 @@ export function SharedNoteView() {
 
         <article
           className="prose prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: marked(note.content) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked(note.content) as string) }}
         />
       </main>
 
