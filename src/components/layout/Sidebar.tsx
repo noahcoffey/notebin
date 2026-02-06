@@ -1,0 +1,91 @@
+import { useState } from 'react';
+import { useUIStore, useAuthStore } from '../../store';
+import { FileExplorer } from '../sidebar/FileExplorer';
+import { SearchPanel } from '../sidebar/SearchPanel';
+import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut } from 'lucide-react';
+
+type SidebarTab = 'files' | 'search';
+
+export function Sidebar() {
+  const { sidebarVisible, sidebarWidth, toggleSidebar, openQuickSwitcher, openSettings, openGraphView } = useUIStore();
+  const { signOut } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<SidebarTab>('files');
+
+  if (!sidebarVisible) {
+    return null;
+  }
+
+  return (
+    <aside
+      className="flex flex-col bg-bg-secondary border-r border-border-primary h-full"
+      style={{ width: sidebarWidth }}
+    >
+      <div className="flex items-center justify-between h-[38px] px-2 border-b border-border-primary">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setActiveTab('files')}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${
+              activeTab === 'files'
+                ? 'bg-bg-hover text-text-primary'
+                : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'
+            }`}
+            title="Files"
+          >
+            <FolderTree size={16} />
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${
+              activeTab === 'search'
+                ? 'bg-bg-hover text-text-primary'
+                : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'
+            }`}
+            title="Search"
+          >
+            <Search size={16} />
+          </button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={openQuickSwitcher}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Quick switcher (Cmd+O)"
+          >
+            <Search size={16} />
+          </button>
+          <button
+            onClick={openGraphView}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Graph view (Cmd+G)"
+          >
+            <GitBranch size={16} />
+          </button>
+          <button
+            onClick={openSettings}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Settings"
+          >
+            <Settings size={16} />
+          </button>
+          <button
+            onClick={signOut}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Sign out"
+          >
+            <LogOut size={16} />
+          </button>
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Close sidebar"
+          >
+            <PanelLeftClose size={16} />
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto scrollbar-thin">
+        {activeTab === 'files' ? <FileExplorer /> : <SearchPanel />}
+      </div>
+    </aside>
+  );
+}

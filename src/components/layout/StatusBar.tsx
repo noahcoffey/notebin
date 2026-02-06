@@ -1,0 +1,50 @@
+import { useWorkspaceStore, useNoteStore } from '../../store';
+
+export function StatusBar() {
+  const { activeTabId, tabs } = useWorkspaceStore();
+  const { getNoteById } = useNoteStore();
+
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
+
+  const wordCount = activeNote?.metadata?.wordCount || 0;
+  const charCount = activeNote?.content.length || 0;
+  const linkCount = activeNote?.metadata?.outgoingLinks?.length || 0;
+
+  return (
+    <footer className="flex items-center justify-between px-4 py-1 bg-bg-secondary border-t border-border-primary text-xs text-text-muted">
+      <div className="flex items-center gap-4">
+        {activeNote ? (
+          <>
+            <span>{wordCount} words</span>
+            <span>{charCount} chars</span>
+            {linkCount > 0 && <span>{linkCount} links</span>}
+          </>
+        ) : (
+          <span>No note selected</span>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        <ShortcutHint keys={['⌘', 'O']} label="Quick Open" />
+        <ShortcutHint keys={['⌘', 'G']} label="Graph" />
+        <ShortcutHint keys={['⌘', 'S']} label="Save" />
+        <ShortcutHint keys={['⌘', ',']} label="Settings" />
+      </div>
+    </footer>
+  );
+}
+
+function ShortcutHint({ keys, label }: { keys: string[]; label: string }) {
+  return (
+    <span className="flex items-center gap-1 text-text-faint">
+      <span className="flex items-center gap-0.5">
+        {keys.map((key, i) => (
+          <kbd key={i} className="px-1 py-0.5 bg-bg-tertiary rounded text-[10px]">
+            {key}
+          </kbd>
+        ))}
+      </span>
+      <span className="text-[10px]">{label}</span>
+    </span>
+  );
+}
