@@ -6,7 +6,14 @@ const EMBED_REGEX = /!\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
 
 export function extractLinks(content: string): Link[] {
   const links: Link[] = [];
-  const lines = content.split('\n');
+
+  // Unescape brackets that may have been escaped by markdown parsers
+  // \[\[ -> [[ and \]\] -> ]]
+  const unescapedContent = content
+    .replace(/\\\[/g, '[')
+    .replace(/\\\]/g, ']');
+
+  const lines = unescapedContent.split('\n');
   let charOffset = 0;
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -72,7 +79,12 @@ export function extractLinks(content: string): Link[] {
 }
 
 export function getContextForLink(content: string, link: Link, contextLength = 100): string {
-  const lines = content.split('\n');
+  // Unescape brackets for consistent context extraction
+  const unescapedContent = content
+    .replace(/\\\[/g, '[')
+    .replace(/\\\]/g, ']');
+
+  const lines = unescapedContent.split('\n');
   const line = lines[link.position.line] || '';
   return line.length > contextLength
     ? line.slice(0, contextLength) + '...'

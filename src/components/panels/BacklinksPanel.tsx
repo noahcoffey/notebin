@@ -22,7 +22,10 @@ export function BacklinksPanel() {
 
     setLoading(true);
     backlinkStorage.getByTarget(activeNote.id)
-      .then(setBacklinks)
+      .then(links => {
+        setBacklinks(links);
+      })
+      .catch(err => console.error('Error fetching backlinks:', err))
       .finally(() => setLoading(false));
   }, [activeNote]);
 

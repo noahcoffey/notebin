@@ -10,12 +10,77 @@ import { replaceAll, getMarkdown } from '@milkdown/utils';
 import { nord } from '@milkdown/theme-nord';
 import { $prose } from '@milkdown/utils';
 import { Plugin, PluginKey } from '@milkdown/prose/state';
+import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import type { Note } from '../../types';
 import { useNoteStore, useWorkspaceStore, useSettingsStore } from '../../store';
-import { updateNoteMetadata } from '../../services/parser';
+import { updateNoteMetadata, extractLinks, getContextForLink } from '../../services/parser';
+import { backlinkStorage } from '../../services/storage';
 import { debounce } from '../../utils';
 import '@milkdown/theme-nord/style.css';
 import './milkdown.css';
+
+// Wikilink callback - will be set by the component
+let onWikilinkClick: ((noteTitle: string) => void) | null = null;
+
+// Wikilink decoration plugin
+const wikilinkPlugin = $prose(() => {
+  const wikilinkRegex = /\[\[([^\]]+)\]\]/g;
+
+  return new Plugin({
+    key: new PluginKey('wikilinkPlugin'),
+    state: {
+      init(_, { doc }) {
+        return buildDecorations(doc);
+      },
+      apply(tr, old) {
+        return tr.docChanged ? buildDecorations(tr.doc) : old;
+      },
+    },
+    props: {
+      decorations(state) {
+        return this.getState(state);
+      },
+      handleClick(_view, _pos, event) {
+        const target = event.target as HTMLElement;
+        if (target.classList.contains('wikilink')) {
+          const noteTitle = target.getAttribute('data-note-title');
+          if (noteTitle && onWikilinkClick) {
+            event.preventDefault();
+            onWikilinkClick(noteTitle);
+            return true;
+          }
+        }
+        return false;
+      },
+    },
+  });
+
+  function buildDecorations(doc: any): DecorationSet {
+    const decorations: Decoration[] = [];
+
+    doc.descendants((node: any, pos: number) => {
+      if (node.isText) {
+        const text = node.text || '';
+        let match;
+        wikilinkRegex.lastIndex = 0;
+        while ((match = wikilinkRegex.exec(text)) !== null) {
+          const start = pos + match.index;
+          const end = start + match[0].length;
+          const noteTitle = match[1];
+
+          decorations.push(
+            Decoration.inline(start, end, {
+              class: 'wikilink',
+              'data-note-title': noteTitle,
+            })
+          );
+        }
+      }
+    });
+
+    return DecorationSet.create(doc, decorations);
+  }
+});
 
 // Helper to convert lines to task list format in markdown
 function convertLinesToTaskList(markdown: string, fromLine: number, toLine: number): string {
@@ -96,8 +161,8 @@ interface MilkdownEditorProps {
 }
 
 function MilkdownEditorInner({ note }: MilkdownEditorProps) {
-  const { updateNote } = useNoteStore();
-  const { setTabDirty, tabs, activeTabId } = useWorkspaceStore();
+  const { updateNote, notes, createNote } = useNoteStore();
+  const { openNote, setTabDirty, tabs, activeTabId } = useWorkspaceStore();
   const { autoSave, autoSaveInterval } = useSettingsStore();
   const [loading, getInstance] = useInstance();
 
@@ -107,11 +172,35 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     async (content: string) => {
       const metadata = updateNoteMetadata(content);
       await updateNote(note.id, { content, metadata });
+
+      // Update backlinks
+      const links = extractLinks(content);
+      const backlinkData = links
+        .filter(link => link.type === 'wikilink')
+        .map(link => {
+          const targetNote = notes.find(
+            n => n.title.toLowerCase() === link.target.toLowerCase()
+          );
+          if (!targetNote) return null;
+          return {
+            targetNoteId: targetNote.id,
+            link,
+            context: getContextForLink(content, link),
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      try {
+        await backlinkStorage.updateForNote(note.id, backlinkData);
+      } catch (err) {
+        console.error('Error saving backlinks:', err);
+      }
+
       if (activeTab) {
         setTabDirty(activeTab.id, false);
       }
     },
-    [note.id, updateNote, activeTab, setTabDirty]
+    [note.id, notes, updateNote, activeTab, setTabDirty]
   );
 
   const debouncedSave = useMemo(
@@ -155,6 +244,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
       .use(history)
       .use(listener)
       .use(clipboard)
+      .use(wikilinkPlugin)
       .use(taskListPlugin);
   }, [note.id]); // Recreate editor when note changes
 
@@ -169,6 +259,28 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     };
   }, [get]);
 
+  // Handle wikilink clicks
+  useEffect(() => {
+    onWikilinkClick = async (noteTitle: string) => {
+      // Find existing note by title
+      const existingNote = notes.find(
+        n => n.title.toLowerCase() === noteTitle.toLowerCase()
+      );
+
+      if (existingNote) {
+        openNote(existingNote.id, existingNote.title);
+      } else {
+        // Create new note
+        const newNote = await createNote(noteTitle);
+        openNote(newNote.id, newNote.title);
+      }
+    };
+
+    return () => {
+      onWikilinkClick = null;
+    };
+  }, [notes, openNote, createNote]);
+
   // Update content when note content changes externally
   useEffect(() => {
     const editor = getInstance();
@@ -179,6 +291,34 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
       editor.action(replaceAll(note.content));
     }
   }, [note.content, getInstance, loading]);
+
+  // Update backlinks on mount for existing notes
+  useEffect(() => {
+    if (!note.content) return;
+
+    const links = extractLinks(note.content);
+    if (links.length === 0) return;
+
+    const backlinkData = links
+      .filter(link => link.type === 'wikilink')
+      .map(link => {
+        const targetNote = notes.find(
+          n => n.title.toLowerCase() === link.target.toLowerCase()
+        );
+        if (!targetNote) return null;
+        return {
+          targetNoteId: targetNote.id,
+          link,
+          context: getContextForLink(note.content, link),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    if (backlinkData.length > 0) {
+      backlinkStorage.updateForNote(note.id, backlinkData)
+        .catch(err => console.error('Error saving initial backlinks:', err));
+    }
+  }, [note.id, note.content, notes]);
 
   // Handle Cmd+S to save
   useEffect(() => {
