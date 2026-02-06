@@ -292,11 +292,21 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     }
   }, [note.content, getInstance, loading]);
 
-  // Update backlinks on mount for existing notes
+  // Update backlinks and metadata on mount for existing notes
   useEffect(() => {
     if (!note.content) return;
 
     const links = extractLinks(note.content);
+
+    // Update note metadata if links were found but not stored
+    const storedLinks = note.metadata?.outgoingLinks || [];
+    if (links.length > 0 && storedLinks.length === 0) {
+      const metadata = updateNoteMetadata(note.content);
+      updateNote(note.id, { metadata }).catch(err =>
+        console.error('Error updating note metadata:', err)
+      );
+    }
+
     if (links.length === 0) return;
 
     const backlinkData = links
@@ -318,7 +328,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
       backlinkStorage.updateForNote(note.id, backlinkData)
         .catch(err => console.error('Error saving initial backlinks:', err));
     }
-  }, [note.id, note.content, notes]);
+  }, [note.id, note.content, notes, updateNote]);
 
   // Handle Cmd+S to save
   useEffect(() => {
