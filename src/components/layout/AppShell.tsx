@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { RightPanel } from './RightPanel';
 import { StatusBar } from './StatusBar';
 import { QuickSwitcher } from '../sidebar/QuickSwitcher';
-import { SettingsModal } from '../settings/SettingsModal';
 import { useNoteStore, useUIStore } from '../../store';
+
+const SettingsModal = lazy(() =>
+  import('../settings/SettingsModal').then(m => ({ default: m.SettingsModal }))
+);
 
 export function AppShell() {
   const { loadNotes, loadFolders } = useNoteStore();
@@ -67,7 +70,11 @@ export function AppShell() {
       </div>
       <StatusBar />
       {quickSwitcherOpen && <QuickSwitcher />}
-      {settingsOpen && <SettingsModal />}
+      {settingsOpen && (
+        <Suspense fallback={null}>
+          <SettingsModal />
+        </Suspense>
+      )}
     </div>
   );
 }

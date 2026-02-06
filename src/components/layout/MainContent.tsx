@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { TabBar } from '../workspace/TabBar';
 import { MilkdownEditor } from '../editor/MilkdownEditor';
-import { GraphView } from '../graph/GraphView';
-import { ShareModal } from '../share';
+import { ShareModal } from '../share/ShareModal';
 import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
-import { FileText, PanelLeft, PanelRight, Share2 } from 'lucide-react';
+import { FileText, PanelLeft, PanelRight, Share2, Loader2 } from 'lucide-react';
+
+const GraphView = lazy(() =>
+  import('../graph/GraphView').then(m => ({ default: m.GraphView }))
+);
 
 export function MainContent() {
   const { tabs, activeTabId } = useWorkspaceStore();
@@ -19,7 +22,13 @@ export function MainContent() {
   if (graphViewOpen) {
     return (
       <main className="flex flex-col flex-1 min-w-0 h-full bg-bg-primary">
-        <GraphView onClose={closeGraphView} />
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-full">
+            <Loader2 size={32} className="animate-spin text-accent" />
+          </div>
+        }>
+          <GraphView onClose={closeGraphView} />
+        </Suspense>
       </main>
     );
   }
