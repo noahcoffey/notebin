@@ -14,7 +14,7 @@ interface ContextMenuState {
 export function FileExplorer() {
   const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, moveFolder, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
   const { openNote, closeTab, setActiveTab, tabs, activeTabId } = useWorkspaceStore();
-  const { showRecentNotes, favoriteNoteIds, recentCollapsed, favoritesCollapsed, toggleFavorite, setRecentCollapsed, setFavoritesCollapsed } = useSettingsStore();
+  const { showRecentNotes, favoriteNoteIds, recentCollapsed, favoritesCollapsed, notesCollapsed, toggleFavorite, setRecentCollapsed, setFavoritesCollapsed, setNotesCollapsed } = useSettingsStore();
   const { sidebarVisible, toggleSidebar } = useUIStore();
   const isMobile = useIsMobile();
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -254,7 +254,7 @@ export function FileExplorer() {
           >
             {recentCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
             <Clock size={12} />
-            <span className="leading-none py-1">Recent</span>
+            <span className="leading-none py-1 font-semibold">Recent</span>
           </div>
           {!recentCollapsed && (
             <div>
@@ -297,7 +297,7 @@ export function FileExplorer() {
           >
             {favoritesCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
             <Star size={12} />
-            <span className="leading-none py-1">Favorites</span>
+            <span className="leading-none py-1 font-semibold">Favorites</span>
           </div>
           {!favoritesCollapsed && (
             <div>
@@ -328,12 +328,20 @@ export function FileExplorer() {
 
       {/* All Notes Section */}
       <div className="flex items-center justify-between px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider">
-        <span className="leading-none py-1">Notes</span>
+        <div
+          className="flex items-center gap-1.5 cursor-pointer hover:text-text-secondary"
+          onClick={() => setNotesCollapsed(!notesCollapsed)}
+        >
+          {notesCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+          <FileText size={12} />
+          <span className="leading-none py-1 font-semibold">Notes</span>
+        </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => {
               setShowNewNote(true);
               setNewItemParent(null);
+              if (notesCollapsed) setNotesCollapsed(false);
             }}
             className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover cursor-pointer text-text-muted hover:text-text-primary transition-colors"
             title="New note"
@@ -344,6 +352,7 @@ export function FileExplorer() {
             onClick={() => {
               setShowNewFolder(true);
               setNewItemParent(null);
+              if (notesCollapsed) setNotesCollapsed(false);
             }}
             className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover cursor-pointer text-text-muted hover:text-text-primary transition-colors"
             title="New folder"
@@ -353,97 +362,101 @@ export function FileExplorer() {
         </div>
       </div>
 
-      {showNewNote && newItemParent === null && (
-        <div className="px-2 py-1">
-          <input
-            type="text"
-            value={newItemName}
-            onChange={e => setNewItemName(e.target.value)}
-            onKeyDown={e => handleKeyDown(e, 'note')}
-            onBlur={() => {
-              if (!newItemName.trim()) {
-                setShowNewNote(false);
-              }
-            }}
-            placeholder="Note name..."
-            className="w-full px-2 py-1 text-sm bg-bg-tertiary border border-border-primary rounded focus:outline-none focus:border-accent"
-            autoFocus
-          />
-        </div>
-      )}
+      {!notesCollapsed && (
+        <>
+          {showNewNote && newItemParent === null && (
+            <div className="px-2 py-1">
+              <input
+                type="text"
+                value={newItemName}
+                onChange={e => setNewItemName(e.target.value)}
+                onKeyDown={e => handleKeyDown(e, 'note')}
+                onBlur={() => {
+                  if (!newItemName.trim()) {
+                    setShowNewNote(false);
+                  }
+                }}
+                placeholder="Note name..."
+                className="w-full px-2 py-1 text-sm bg-bg-tertiary border border-border-primary rounded focus:outline-none focus:border-accent"
+                autoFocus
+              />
+            </div>
+          )}
 
-      {showNewFolder && newItemParent === null && (
-        <div className="px-2 py-1">
-          <input
-            type="text"
-            value={newItemName}
-            onChange={e => setNewItemName(e.target.value)}
-            onKeyDown={e => handleKeyDown(e, 'folder')}
-            onBlur={() => {
-              if (!newItemName.trim()) {
-                setShowNewFolder(false);
-              }
-            }}
-            placeholder="Folder name..."
-            className="w-full px-2 py-1 text-sm bg-bg-tertiary border border-border-primary rounded focus:outline-none focus:border-accent"
-            autoFocus
-          />
-        </div>
-      )}
+          {showNewFolder && newItemParent === null && (
+            <div className="px-2 py-1">
+              <input
+                type="text"
+                value={newItemName}
+                onChange={e => setNewItemName(e.target.value)}
+                onKeyDown={e => handleKeyDown(e, 'folder')}
+                onBlur={() => {
+                  if (!newItemName.trim()) {
+                    setShowNewFolder(false);
+                  }
+                }}
+                placeholder="Folder name..."
+                className="w-full px-2 py-1 text-sm bg-bg-tertiary border border-border-primary rounded focus:outline-none focus:border-accent"
+                autoFocus
+              />
+            </div>
+          )}
 
-      {/* Root drop zone - always in DOM, visibility controlled by CSS */}
-      <div
-        className={`mx-2 mb-2 px-3 py-2 border-2 border-dashed rounded text-xs text-center transition-all ${
-          isDragging ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden py-0 mb-0'
-        } ${
-          dragOverFolderId === null
-            ? 'border-accent bg-accent/20 text-text-primary'
-            : 'border-border-primary text-text-muted'
-        }`}
-        onDragOver={(e) => handleDragOver(e, null)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, null)}
-      >
-        Drop here to move to root
-      </div>
-
-      <div
-        className="mt-1"
-        onDragOver={(e) => handleDragOver(e, null)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, null)}
-      >
-        {tree.map(item => (
-          <FileTreeNode
-            key={item.id}
-            item={item}
-            depth={0}
-            onToggle={toggleFolder}
-            onOpenNote={handleOpenNote}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
+          {/* Root drop zone - always in DOM, visibility controlled by CSS */}
+          <div
+            className={`mx-2 px-3 border-2 border-dashed rounded text-xs text-center transition-all ${
+              isDragging ? 'opacity-100 py-2 mb-2' : 'hidden'
+            } ${
+              dragOverFolderId === null
+                ? 'border-accent bg-accent/20 text-text-primary'
+                : 'border-border-primary text-text-muted'
+            }`}
+            onDragOver={(e) => handleDragOver(e, null)}
             onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            dragOverFolderId={dragOverFolderId}
-            onContextMenu={handleContextMenu}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchMove}
-            renameItem={renameItem}
-            renameValue={renameValue}
-            onRenameChange={setRenameValue}
-            onRenameSubmit={handleRenameSubmit}
-            onRenameKeyDown={handleRenameKeyDown}
-            activeNoteId={activeNoteId}
-            favoriteNoteIds={favoriteNoteIds}
-            onToggleFavorite={toggleFavorite}
-          />
-        ))}
-        {tree.length === 0 && !showNewNote && !showNewFolder && (
-          <p className="px-4 py-2 text-sm text-text-muted italic">No notes yet</p>
-        )}
-      </div>
+            onDrop={(e) => handleDrop(e, null)}
+          >
+            Drop here to move to root
+          </div>
+
+          <div
+            className="mt-1"
+            onDragOver={(e) => handleDragOver(e, null)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, null)}
+          >
+            {tree.map(item => (
+              <FileTreeNode
+                key={item.id}
+                item={item}
+                depth={0}
+                onToggle={toggleFolder}
+                onOpenNote={handleOpenNote}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                dragOverFolderId={dragOverFolderId}
+                onContextMenu={handleContextMenu}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={handleTouchMove}
+                renameItem={renameItem}
+                renameValue={renameValue}
+                onRenameChange={setRenameValue}
+                onRenameSubmit={handleRenameSubmit}
+                onRenameKeyDown={handleRenameKeyDown}
+                activeNoteId={activeNoteId}
+                favoriteNoteIds={favoriteNoteIds}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+            {tree.length === 0 && !showNewNote && !showNewFolder && (
+              <p className="px-4 py-2 text-sm text-text-muted italic">No notes yet</p>
+            )}
+          </div>
+        </>
+      )}
 
       {contextMenu && (
         <ContextMenu
