@@ -5,12 +5,14 @@
 }
 
 .milkdown-editor-wrapper .milkdown {
-  height: 100%;
+  min-height: 100%;
   padding: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
   max-width: 100%;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (min-width: 768px) {
@@ -21,7 +23,9 @@
 
 .milkdown-editor-wrapper .editor {
   outline: none;
-  min-height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Override nord theme colors */
@@ -31,6 +35,8 @@
   overflow-wrap: anywhere;
   word-break: break-word;
   max-width: 100%;
+  flex: 1;
+  cursor: text;
 }
 
 /* Headings */

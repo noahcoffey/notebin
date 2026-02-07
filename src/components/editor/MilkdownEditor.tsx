@@ -553,8 +553,22 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     [notes]
   );
 
+  // Click in empty area below content → focus editor at end
+  const handleWrapperClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Only handle clicks on the wrapper/milkdown container itself, not on editor content
+    if (target.closest('.ProseMirror')) return;
+    const view = editorViewForAutocomplete;
+    if (!view) return;
+    const endPos = view.state.doc.content.size;
+    view.dispatch(view.state.tr.setSelection(
+      view.state.selection.constructor.near(view.state.doc.resolve(endPos))
+    ));
+    view.focus();
+  }, []);
+
   return (
-    <div ref={wrapperRef} className="milkdown-editor-wrapper h-full w-full overflow-y-auto overflow-x-hidden">
+    <div ref={wrapperRef} className="milkdown-editor-wrapper h-full w-full overflow-y-auto overflow-x-hidden" onClick={handleWrapperClick}>
       <Milkdown />
       {autocomplete.show && (
         <WikilinkAutocomplete
