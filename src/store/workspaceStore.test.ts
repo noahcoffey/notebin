@@ -41,29 +41,23 @@ describe('workspaceStore', () => {
       expect(state.activeTabId).toBe(state.tabs[0].id);
     });
 
-    it('activates existing tab if note is already open', () => {
+    it('replaces previous tab when opening a different note', () => {
+      useWorkspaceStore.getState().openNote('note-1', 'Note 1');
+      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
+
+      const state = useWorkspaceStore.getState();
+      expect(state.tabs).toHaveLength(1);
+      expect(state.tabs[0].noteId).toBe('note-2');
+      expect(state.activeTabId).toBe(state.tabs[0].id);
+    });
+
+    it('keeps existing tab when opening the same note', () => {
       useWorkspaceStore.getState().openNote('note-1', 'My Note');
       const firstTabId = useWorkspaceStore.getState().tabs[0].id;
 
-      // Open a second note
-      useWorkspaceStore.getState().openNote('note-2', 'Another Note');
-      expect(useWorkspaceStore.getState().activeTabId).not.toBe(firstTabId);
-
-      // Open the first note again - should just switch to existing tab
       useWorkspaceStore.getState().openNote('note-1', 'My Note');
-      expect(useWorkspaceStore.getState().tabs).toHaveLength(2);
+      expect(useWorkspaceStore.getState().tabs).toHaveLength(1);
       expect(useWorkspaceStore.getState().activeTabId).toBe(firstTabId);
-    });
-
-    it('opens multiple tabs for different notes', () => {
-      useWorkspaceStore.getState().openNote('note-1', 'Note 1');
-      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
-      useWorkspaceStore.getState().openNote('note-3', 'Note 3');
-
-      const state = useWorkspaceStore.getState();
-      expect(state.tabs).toHaveLength(3);
-      // Last opened note should be active
-      expect(state.activeTabId).toBe(state.tabs[2].id);
     });
   });
 
@@ -83,52 +77,14 @@ describe('workspaceStore', () => {
       useWorkspaceStore.getState().closeTab(tabId);
       expect(useWorkspaceStore.getState().activeTabId).toBeNull();
     });
-
-    it('activates adjacent tab when closing active tab', () => {
-      useWorkspaceStore.getState().openNote('note-1', 'Note 1');
-      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
-      useWorkspaceStore.getState().openNote('note-3', 'Note 3');
-
-      const tabs = useWorkspaceStore.getState().tabs;
-      // Close the last (active) tab - should activate the one before it
-      useWorkspaceStore.getState().closeTab(tabs[2].id);
-      expect(useWorkspaceStore.getState().activeTabId).toBe(tabs[1].id);
-    });
-
-    it('activates next tab when closing first active tab', () => {
-      useWorkspaceStore.getState().openNote('note-1', 'Note 1');
-      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
-
-      const tabs = useWorkspaceStore.getState().tabs;
-      // Set first tab as active
-      useWorkspaceStore.getState().setActiveTab(tabs[0].id);
-
-      // Close first tab - should activate the next
-      useWorkspaceStore.getState().closeTab(tabs[0].id);
-      expect(useWorkspaceStore.getState().activeTabId).toBe(tabs[1].id);
-    });
-
-    it('does not change active tab when closing a non-active tab', () => {
-      useWorkspaceStore.getState().openNote('note-1', 'Note 1');
-      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
-
-      const tabs = useWorkspaceStore.getState().tabs;
-      const activeTabId = useWorkspaceStore.getState().activeTabId;
-
-      // Close the first (non-active) tab
-      useWorkspaceStore.getState().closeTab(tabs[0].id);
-      expect(useWorkspaceStore.getState().activeTabId).toBe(activeTabId);
-    });
   });
 
   describe('setActiveTab', () => {
     it('sets the active tab', () => {
       useWorkspaceStore.getState().openNote('note-1', 'Note 1');
-      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
-
-      const tabs = useWorkspaceStore.getState().tabs;
-      useWorkspaceStore.getState().setActiveTab(tabs[0].id);
-      expect(useWorkspaceStore.getState().activeTabId).toBe(tabs[0].id);
+      const tabId = useWorkspaceStore.getState().tabs[0].id;
+      useWorkspaceStore.getState().setActiveTab(tabId);
+      expect(useWorkspaceStore.getState().activeTabId).toBe(tabId);
     });
   });
 
@@ -139,15 +95,6 @@ describe('workspaceStore', () => {
 
       useWorkspaceStore.getState().updateTabTitle(tabId, 'New Title');
       expect(useWorkspaceStore.getState().tabs[0].title).toBe('New Title');
-    });
-
-    it('does not affect other tabs', () => {
-      useWorkspaceStore.getState().openNote('note-1', 'Note 1');
-      useWorkspaceStore.getState().openNote('note-2', 'Note 2');
-
-      const tabs = useWorkspaceStore.getState().tabs;
-      useWorkspaceStore.getState().updateTabTitle(tabs[0].id, 'Updated');
-      expect(useWorkspaceStore.getState().tabs[1].title).toBe('Note 2');
     });
   });
 

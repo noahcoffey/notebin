@@ -1,5 +1,4 @@
 import { useState, lazy, Suspense } from 'react';
-import { TabBar } from '../workspace/TabBar';
 import { MilkdownEditor } from '../editor/MilkdownEditor';
 import { ShareModal } from '../share/ShareModal';
 import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
@@ -47,12 +46,8 @@ export function MainContent() {
             <PanelLeft size={16} />
           </button>
         )}
-        {!isMobile ? (
-          <div className="flex-1 min-w-0 h-full">
-            <TabBar />
-          </div>
-        ) : activeNote ? (
-          <div className="flex-1 min-w-0 px-2 text-sm text-text-primary truncate">
+        {activeNote ? (
+          <div className="flex-1 min-w-0 px-2 text-sm text-text-primary truncate self-center">
             {activeNote.title}
           </div>
         ) : (

@@ -31,7 +31,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     const existingTab = tabs.find(t => t.noteId === noteId);
 
     if (existingTab) {
-      set({ activeTabId: existingTab.id });
+      set({ tabs: [existingTab], activeTabId: existingTab.id });
       return;
     }
 
@@ -43,7 +43,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     };
 
     set({
-      tabs: [...tabs, newTab],
+      tabs: [newTab],
       activeTabId: newTab.id,
     });
   },
