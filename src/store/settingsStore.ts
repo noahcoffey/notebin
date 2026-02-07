@@ -10,6 +10,9 @@ interface SettingsState {
   autoSave: boolean;
   autoSaveInterval: number;
   showRecentNotes: boolean;
+  favoriteNoteIds: string[];
+  recentCollapsed: boolean;
+  favoritesCollapsed: boolean;
 
   setEditorFontSize: (size: number) => void;
   setEditorLineHeight: (height: number) => void;
@@ -19,6 +22,9 @@ interface SettingsState {
   setAutoSave: (enabled: boolean) => void;
   setAutoSaveInterval: (interval: number) => void;
   setShowRecentNotes: (show: boolean) => void;
+  toggleFavorite: (noteId: string) => void;
+  setRecentCollapsed: (collapsed: boolean) => void;
+  setFavoritesCollapsed: (collapsed: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -32,6 +38,9 @@ export const useSettingsStore = create<SettingsState>()(
       autoSave: true,
       autoSaveInterval: 5000,
       showRecentNotes: true,
+      favoriteNoteIds: [],
+      recentCollapsed: false,
+      favoritesCollapsed: false,
 
       setEditorFontSize: (size: number) => set({ editorFontSize: Math.max(12, Math.min(24, size)) }),
       setEditorLineHeight: (height: number) => set({ editorLineHeight: Math.max(1.2, Math.min(2.4, height)) }),
@@ -41,6 +50,13 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoSave: (enabled: boolean) => set({ autoSave: enabled }),
       setAutoSaveInterval: (interval: number) => set({ autoSaveInterval: Math.max(1000, Math.min(60000, interval)) }),
       setShowRecentNotes: (show: boolean) => set({ showRecentNotes: show }),
+      toggleFavorite: (noteId: string) => set((state) => ({
+        favoriteNoteIds: state.favoriteNoteIds.includes(noteId)
+          ? state.favoriteNoteIds.filter(id => id !== noteId)
+          : [...state.favoriteNoteIds, noteId],
+      })),
+      setRecentCollapsed: (collapsed: boolean) => set({ recentCollapsed: collapsed }),
+      setFavoritesCollapsed: (collapsed: boolean) => set({ favoritesCollapsed: collapsed }),
     }),
     {
       name: 'noted-settings',

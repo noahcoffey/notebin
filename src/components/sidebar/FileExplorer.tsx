@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useNoteStore, useWorkspaceStore, useSettingsStore, useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import type { FileTreeItem } from '../../types';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock, FileText, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock, FileText, X, Star } from 'lucide-react';
 import { ContextMenu, type ContextMenuItem } from '../common/ContextMenu';
 
 interface ContextMenuState {
@@ -14,7 +14,7 @@ interface ContextMenuState {
 export function FileExplorer() {
   const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, moveFolder, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
   const { openNote, closeTab, setActiveTab, tabs, activeTabId } = useWorkspaceStore();
-  const { showRecentNotes } = useSettingsStore();
+  const { showRecentNotes, favoriteNoteIds, recentCollapsed, favoritesCollapsed, toggleFavorite, setRecentCollapsed, setFavoritesCollapsed } = useSettingsStore();
   const { sidebarVisible, toggleSidebar } = useUIStore();
   const isMobile = useIsMobile();
   const activeTab = tabs.find(t => t.id === activeTabId);
@@ -24,6 +24,9 @@ export function FileExplorer() {
   const recentNotes = [...notes]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
+  const favoriteNotes = favoriteNoteIds
+    .map(id => notes.find(n => n.id === id))
+    .filter((n): n is NonNullable<typeof n> => n != null);
   const [showNewNote, setShowNewNote] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -245,25 +248,81 @@ export function FileExplorer() {
       {/* Recent Notes Section */}
       {showRecentNotes && recentNotes.length > 0 && (
         <div className="mb-2">
-          <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider">
+          <div
+            className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider cursor-pointer hover:text-text-secondary"
+            onClick={() => setRecentCollapsed(!recentCollapsed)}
+          >
+            {recentCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
             <Clock size={12} />
             <span className="leading-none py-1">Recent</span>
           </div>
-          <div>
-            {recentNotes.map(note => (
-              <div
-                key={note.id}
-                className={`flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover ${
-                  note.id === activeNoteId ? 'bg-bg-hover text-accent' : 'text-text-primary'
-                }`}
-                style={{ paddingLeft: 28 }}
-                onClick={() => handleOpenNote(note.id, note.title)}
-              >
-                <File size={16} className={`shrink-0 ${note.id === activeNoteId ? 'text-accent' : 'text-text-muted'}`} />
-                <span className="truncate">{note.title}</span>
-              </div>
-            ))}
+          {!recentCollapsed && (
+            <div>
+              {recentNotes.map(note => {
+                const isFavorited = favoriteNoteIds.includes(note.id);
+                return (
+                  <div
+                    key={note.id}
+                    className={`group flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover ${
+                      note.id === activeNoteId ? 'bg-bg-hover text-accent' : 'text-text-primary'
+                    }`}
+                    style={{ paddingLeft: 28 }}
+                    onClick={() => handleOpenNote(note.id, note.title)}
+                  >
+                    <File size={16} className={`shrink-0 ${note.id === activeNoteId ? 'text-accent' : 'text-text-muted'}`} />
+                    <span className="truncate flex-1">{note.title}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
+                      className={`p-0.5 rounded hover:bg-bg-active shrink-0 ${
+                        isFavorited ? 'text-accent' : 'opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary'
+                      }`}
+                      title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Star size={14} fill={isFavorited ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Favorites Section */}
+      {favoriteNotes.length > 0 && (
+        <div className="mb-2">
+          <div
+            className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider cursor-pointer hover:text-text-secondary"
+            onClick={() => setFavoritesCollapsed(!favoritesCollapsed)}
+          >
+            {favoritesCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+            <Star size={12} />
+            <span className="leading-none py-1">Favorites</span>
           </div>
+          {!favoritesCollapsed && (
+            <div>
+              {favoriteNotes.map(note => (
+                <div
+                  key={note.id}
+                  className={`group flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover ${
+                    note.id === activeNoteId ? 'bg-bg-hover text-accent' : 'text-text-primary'
+                  }`}
+                  style={{ paddingLeft: 28 }}
+                  onClick={() => handleOpenNote(note.id, note.title)}
+                >
+                  <File size={16} className={`shrink-0 ${note.id === activeNoteId ? 'text-accent' : 'text-text-muted'}`} />
+                  <span className="truncate flex-1">{note.title}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(note.id); }}
+                    className="p-0.5 rounded hover:bg-bg-active shrink-0 text-accent"
+                    title="Remove from favorites"
+                  >
+                    <Star size={14} fill="currentColor" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -377,6 +436,8 @@ export function FileExplorer() {
             onRenameSubmit={handleRenameSubmit}
             onRenameKeyDown={handleRenameKeyDown}
             activeNoteId={activeNoteId}
+            favoriteNoteIds={favoriteNoteIds}
+            onToggleFavorite={toggleFavorite}
           />
         ))}
         {tree.length === 0 && !showNewNote && !showNewFolder && (
@@ -417,6 +478,8 @@ interface FileTreeNodeProps {
   onRenameSubmit: () => void;
   onRenameKeyDown: (e: React.KeyboardEvent) => void;
   activeNoteId: string | null;
+  favoriteNoteIds: string[];
+  onToggleFavorite: (noteId: string) => void;
 }
 
 function FileTreeNode({
@@ -440,6 +503,8 @@ function FileTreeNode({
   onRenameSubmit,
   onRenameKeyDown,
   activeNoteId,
+  favoriteNoteIds,
+  onToggleFavorite,
 }: FileTreeNodeProps) {
   const paddingLeft = 8 + depth * 16;
   const isRenaming = renameItem?.id === item.id;
@@ -529,6 +594,8 @@ function FileTreeNode({
                 onRenameSubmit={onRenameSubmit}
                 onRenameKeyDown={onRenameKeyDown}
                 activeNoteId={activeNoteId}
+                favoriteNoteIds={favoriteNoteIds}
+                onToggleFavorite={onToggleFavorite}
               />
             ))}
           </div>
@@ -537,9 +604,11 @@ function FileTreeNode({
     );
   }
 
+  const isFavorited = item.type === 'note' && favoriteNoteIds.includes(item.id);
+
   return (
     <div
-      className={`flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover text-text-primary ${
+      className={`group flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover text-text-primary ${
         isActive ? 'bg-bg-hover text-accent' : ''
       }`}
       style={{ paddingLeft: paddingLeft + 20 }}
@@ -565,7 +634,18 @@ function FileTreeNode({
           autoFocus
         />
       ) : (
-        <span className="truncate">{item.name}</span>
+        <>
+          <span className="truncate flex-1">{item.name}</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.id); }}
+            className={`p-0.5 rounded hover:bg-bg-active shrink-0 ${
+              isFavorited ? 'text-accent' : 'opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary'
+            }`}
+            title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Star size={14} fill={isFavorited ? 'currentColor' : 'none'} />
+          </button>
+        </>
       )}
     </div>
   );
