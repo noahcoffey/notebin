@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useNoteStore, useWorkspaceStore, useSettingsStore, useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import type { FileTreeItem } from '../../types';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock, FileText, X } from 'lucide-react';
 import { ContextMenu, type ContextMenuItem } from '../common/ContextMenu';
 
 interface ContextMenuState {
@@ -13,7 +13,7 @@ interface ContextMenuState {
 
 export function FileExplorer() {
   const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
-  const { openNote, closeTab, tabs, activeTabId } = useWorkspaceStore();
+  const { openNote, closeTab, setActiveTab, tabs, activeTabId } = useWorkspaceStore();
   const { showRecentNotes } = useSettingsStore();
   const { sidebarVisible, toggleSidebar } = useUIStore();
   const isMobile = useIsMobile();
@@ -192,8 +192,50 @@ export function FileExplorer() {
     },
   ];
 
+  const handleSwitchTab = (tabId: string) => {
+    setActiveTab(tabId);
+    if (isMobile && sidebarVisible) toggleSidebar();
+  };
+
   return (
     <div className="py-2">
+      {/* Open Notes Section - mobile only */}
+      {isMobile && tabs.length > 0 && (
+        <div className="mb-2">
+          <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wider">
+            <FileText size={12} />
+            <span className="leading-none py-1">Open</span>
+          </div>
+          <div>
+            {tabs.map(tab => (
+              <div
+                key={tab.id}
+                className={`group flex items-center gap-1 px-2 py-2 text-sm cursor-pointer hover:bg-bg-hover ${
+                  tab.id === activeTabId ? 'bg-bg-hover text-accent' : 'text-text-primary'
+                }`}
+                style={{ paddingLeft: 28 }}
+                onClick={() => handleSwitchTab(tab.id)}
+              >
+                <File size={16} className={`shrink-0 ${tab.id === activeTabId ? 'text-accent' : 'text-text-muted'}`} />
+                <span className="truncate flex-1">
+                  {tab.isDirty && <span className="text-accent mr-1">●</span>}
+                  {tab.title}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tab.id);
+                  }}
+                  className="p-0.5 rounded hover:bg-bg-active opacity-0 group-hover:opacity-100 active:opacity-100"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent Notes Section */}
       {showRecentNotes && recentNotes.length > 0 && (
         <div className="mb-2">

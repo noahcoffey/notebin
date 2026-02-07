@@ -47,9 +47,16 @@ export function MainContent() {
             <PanelLeft size={16} />
           </button>
         )}
-        <div className="flex-1 min-w-0">
+        <div className="hidden md:block flex-1 min-w-0">
           <TabBar />
         </div>
+        {/* On mobile, show active note title instead of tab bar */}
+        {isMobile && activeNote && (
+          <div className="flex-1 min-w-0 px-2 text-sm text-text-primary truncate">
+            {activeNote.title}
+          </div>
+        )}
+        {isMobile && !activeNote && <div className="flex-1" />}
         {activeNote && (
           <button
             onClick={() => setShowShareModal(true)}
