@@ -474,8 +474,12 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
         e.preventDefault();
         const editor = getInstance();
         if (editor) {
-          const markdown = editor.action(getMarkdown());
-          saveNote(markdown);
+          try {
+            const markdown = editor.action(getMarkdown());
+            saveNote(markdown);
+          } catch {
+            // Editor not fully ready
+          }
         }
       }
     };
@@ -517,29 +521,33 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
 
       if (taskIndex === -1) return;
 
-      const isChecked = listItem.getAttribute('data-checked') === 'true';
-      const currentMarkdown = editor.action(getMarkdown());
-      const lines = currentMarkdown.split('\n');
+      try {
+        const isChecked = listItem.getAttribute('data-checked') === 'true';
+        const currentMarkdown = editor.action(getMarkdown());
+        const lines = currentMarkdown.split('\n');
 
-      let taskCount = 0;
-      for (let i = 0; i < lines.length; i++) {
-        // Match task lists with -, *, or + bullets
-        if (/^\s*[-*+]\s*\[[ xX]\]/.test(lines[i])) {
-          if (taskCount === taskIndex) {
-            if (isChecked) {
-              lines[i] = lines[i].replace(/\[x\]/i, '[ ]');
-            } else {
-              lines[i] = lines[i].replace(/\[ \]/, '[x]');
+        let taskCount = 0;
+        for (let i = 0; i < lines.length; i++) {
+          // Match task lists with -, *, or + bullets
+          if (/^\s*[-*+]\s*\[[ xX]\]/.test(lines[i])) {
+            if (taskCount === taskIndex) {
+              if (isChecked) {
+                lines[i] = lines[i].replace(/\[x\]/i, '[ ]');
+              } else {
+                lines[i] = lines[i].replace(/\[ \]/, '[x]');
+              }
+              break;
             }
-            break;
+            taskCount++;
           }
-          taskCount++;
         }
-      }
 
-      const newMarkdown = lines.join('\n');
-      if (newMarkdown !== currentMarkdown) {
-        editor.action(replaceAll(newMarkdown));
+        const newMarkdown = lines.join('\n');
+        if (newMarkdown !== currentMarkdown) {
+          editor.action(replaceAll(newMarkdown));
+        }
+      } catch {
+        // Editor not fully ready
       }
     };
 
