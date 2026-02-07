@@ -3,12 +3,12 @@ import { useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { BacklinksPanel } from '../panels/BacklinksPanel';
 import { OutlinePanel } from '../panels/OutlinePanel';
-import { PanelRightClose, Link2, List } from 'lucide-react';
+import { PanelRightClose, Link2, List, Presentation } from 'lucide-react';
 
 type PanelTab = 'backlinks' | 'outline';
 
 export function RightPanel() {
-  const { rightPanelVisible, rightPanelWidth, toggleRightPanel } = useUIStore();
+  const { rightPanelVisible, rightPanelWidth, toggleRightPanel, togglePresentationMode } = useUIStore();
   const [activeTab, setActiveTab] = useState<PanelTab>('outline');
   const isMobile = useIsMobile();
 
@@ -52,13 +52,22 @@ export function RightPanel() {
             <span>Backlinks</span>
           </button>
         </div>
-        <button
-          onClick={toggleRightPanel}
-          className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-          title="Close panel"
-        >
-          <PanelRightClose size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={togglePresentationMode}
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Presentation mode"
+          >
+            <Presentation size={16} />
+          </button>
+          <button
+            onClick={toggleRightPanel}
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Close panel"
+          >
+            <PanelRightClose size={16} />
+          </button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {activeTab === 'backlinks' ? (
