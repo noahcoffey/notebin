@@ -241,11 +241,13 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   }, [activeTab, setTabDirty, debouncedSave]);
 
   // Reset stale references when editor is about to be recreated
-  if (editorNoteIdRef.current !== null && editorNoteIdRef.current !== note.id) {
-    editorViewForAutocomplete = null;
-    editorInstanceForPlugin = null;
-  }
-  editorNoteIdRef.current = note.id;
+  useEffect(() => {
+    if (editorNoteIdRef.current !== null && editorNoteIdRef.current !== note.id) {
+      editorViewForAutocomplete = null;
+      editorInstanceForPlugin = null;
+    }
+    editorNoteIdRef.current = note.id;
+  }, [note.id]);
 
   const { get } = useEditor((root) => {
     return Editor.make()
@@ -462,6 +464,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     } catch {
       // Editor not fully ready yet
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- note.id is intentionally omitted; we only want to react to content changes, using note.id as a first-sync guard
   }, [note.content, getInstance, loading]);
 
   // Update backlinks and metadata on mount for existing notes

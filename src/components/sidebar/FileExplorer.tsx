@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNoteStore, useWorkspaceStore, useSettingsStore, useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import type { FileTreeItem } from '../../types';
@@ -42,14 +42,17 @@ export function FileExplorer() {
   const tree = getFileTree();
 
   // Collect all folder IDs nested under a given folder (inclusive)
-  const getDescendantFolderIds = useCallback((folderId: string): string[] => {
-    const ids = [folderId];
-    for (const f of folders) {
-      if (f.parentId === folderId) {
-        ids.push(...getDescendantFolderIds(f.id));
+  const getDescendantFolderIds = useMemo(() => {
+    const fn = (folderId: string): string[] => {
+      const ids = [folderId];
+      for (const f of folders) {
+        if (f.parentId === folderId) {
+          ids.push(...fn(f.id));
+        }
       }
-    }
-    return ids;
+      return ids;
+    };
+    return fn;
   }, [folders]);
 
   // Get all notes inside a folder and its subfolders

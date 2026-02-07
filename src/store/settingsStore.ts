@@ -101,7 +101,8 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'noted-settings',
       partialize: (state) => {
         // Exclude jiraApiToken from persistence for security
-        const { jiraApiToken: _, ...rest } = state;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { jiraApiToken, ...rest } = state;
         return rest;
       },
     }
