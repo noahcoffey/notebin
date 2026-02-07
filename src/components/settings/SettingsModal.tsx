@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useSettingsStore, useUIStore, useNoteStore } from '../../store';
-import { X, Download, Upload, Trash2, FolderOpen } from 'lucide-react';
+import { X, Download, Upload, Trash2, FolderOpen, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { testConnection } from '../../utils/jiraApi';
 
-type SettingsTab = 'editor' | 'data';
+type SettingsTab = 'editor' | 'data' | 'jira';
 
 export function SettingsModal() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('editor');
@@ -22,8 +23,33 @@ export function SettingsModal() {
     setAutoSave,
     setAutoSaveInterval,
     setShowRecentNotes,
+    jiraInstanceUrl,
+    jiraEmail,
+    jiraApiToken,
+    jiraBoardId,
+    jiraFolderId,
+    setJiraConfig,
   } = useSettingsStore();
   const { notes, folders } = useNoteStore();
+
+  const [jiraTestStatus, setJiraTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [jiraTestError, setJiraTestError] = useState('');
+
+  const handleTestJiraConnection = async () => {
+    setJiraTestStatus('loading');
+    setJiraTestError('');
+    try {
+      await testConnection({
+        instanceUrl: jiraInstanceUrl,
+        email: jiraEmail,
+        apiToken: jiraApiToken,
+      });
+      setJiraTestStatus('success');
+    } catch (err) {
+      setJiraTestStatus('error');
+      setJiraTestError(err instanceof Error ? err.message : 'Connection failed');
+    }
+  };
 
   const handleExport = () => {
     const data = {
@@ -127,6 +153,16 @@ export function SettingsModal() {
               }`}
             >
               Data & Backup
+            </button>
+            <button
+              onClick={() => setActiveTab('jira')}
+              className={`whitespace-nowrap text-left px-3 py-2 rounded text-sm ${
+                activeTab === 'jira'
+                  ? 'bg-bg-hover text-text-primary'
+                  : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'
+              }`}
+            >
+              JIRA
             </button>
           </div>
 
@@ -305,6 +341,99 @@ export function SettingsModal() {
                     <Trash2 size={16} />
                     Clear All Data
                   </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'jira' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-text-primary mb-3">JIRA Integration</h3>
+                  <p className="text-xs text-text-muted mb-4">
+                    Connect to JIRA to generate sprint status reports as notes.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">Instance URL</label>
+                      <input
+                        type="url"
+                        value={jiraInstanceUrl}
+                        onChange={e => setJiraConfig({ instanceUrl: e.target.value })}
+                        placeholder="https://company.atlassian.net"
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={jiraEmail}
+                        onChange={e => setJiraConfig({ email: e.target.value })}
+                        placeholder="you@company.com"
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">API Token</label>
+                      <input
+                        type="password"
+                        value={jiraApiToken}
+                        onChange={e => setJiraConfig({ apiToken: e.target.value })}
+                        placeholder="Your JIRA API token"
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+                      />
+                      <p className="text-xs text-text-muted mt-1">
+                        Not persisted across sessions for security.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">Board ID</label>
+                      <input
+                        type="text"
+                        value={jiraBoardId}
+                        onChange={e => setJiraConfig({ boardId: e.target.value })}
+                        placeholder="e.g. 42"
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">Sprint Status Folder</label>
+                      <select
+                        value={jiraFolderId ?? ''}
+                        onChange={e => setJiraConfig({ folderId: e.target.value || null })}
+                        className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded text-sm text-text-primary focus:outline-none focus:border-accent"
+                      >
+                        <option value="">Root (no folder)</option>
+                        {folders.map(f => (
+                          <option key={f.id} value={f.id}>{f.path}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleTestJiraConnection}
+                    disabled={!jiraInstanceUrl || !jiraEmail || !jiraApiToken || jiraTestStatus === 'loading'}
+                    className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {jiraTestStatus === 'loading' && <Loader2 size={16} className="animate-spin" />}
+                    {jiraTestStatus === 'success' && <CheckCircle2 size={16} />}
+                    {jiraTestStatus === 'error' && <XCircle size={16} />}
+                    Test Connection
+                  </button>
+                  {jiraTestStatus === 'success' && (
+                    <span className="text-sm text-green-400">Connected successfully</span>
+                  )}
+                  {jiraTestStatus === 'error' && (
+                    <span className="text-sm text-red-400">{jiraTestError}</span>
+                  )}
                 </div>
               </div>
             )}

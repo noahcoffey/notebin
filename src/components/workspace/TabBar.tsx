@@ -1,16 +1,19 @@
-import { useWorkspaceStore } from '../../store';
+import { useWorkspaceStore, useUIStore } from '../../store';
 import { X } from 'lucide-react';
 
 export function TabBar() {
   const { tabs, activeTabId, setActiveTab, closeTab } = useWorkspaceStore();
+  const { presentationMode } = useUIStore();
 
   if (tabs.length === 0) {
     return null;
   }
 
+  const visibleTabs = presentationMode ? tabs.filter(t => t.id === activeTabId) : tabs;
+
   return (
     <div className="flex items-center overflow-hidden" style={{ height: 'calc(100% + 1px)' }}>
-      {tabs.map(tab => (
+      {visibleTabs.map(tab => (
         <div
           key={tab.id}
           className={`

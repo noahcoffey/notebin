@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { X, FolderOpen, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
-import { useUIStore } from '../../store';
+import { X, FolderOpen, ChevronDown, ChevronRight, AlertCircle, Plus } from 'lucide-react';
+import { useUIStore, useNoteStore } from '../../store';
 import { parseObsidianVault, parseBearExport, importNotes } from '../../services/import';
 import type { ImportResult, ImportProgress } from '../../services/import';
 
@@ -9,6 +9,8 @@ type ImportSource = 'obsidian' | 'bear';
 
 export function ImportModal() {
   const { closeImportModal } = useUIStore();
+  const folders = useNoteStore(s => s.folders);
+  const createFolder = useNoteStore(s => s.createFolder);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('source');
@@ -19,6 +21,9 @@ export function ImportModal() {
   const [results, setResults] = useState<{ notesCreated: number; foldersCreated: number; skipped: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [skippedExpanded, setSkippedExpanded] = useState(false);
+  const [destinationMode, setDestinationMode] = useState<'root' | 'existing' | 'new'>('root');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState('');
 
   const handleFolderSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -59,14 +64,29 @@ export function ImportModal() {
     setError(null);
 
     try {
-      const importResults = await importNotes(parseResult, setProgress);
+      let parentFolderId: string | null = null;
+
+      if (destinationMode === 'existing') {
+        parentFolderId = selectedFolderId;
+      } else if (destinationMode === 'new') {
+        const trimmed = newFolderName.trim();
+        if (!trimmed) {
+          setError('Please enter a folder name.');
+          setStep('preview');
+          return;
+        }
+        const newFolder = await createFolder(trimmed);
+        parentFolderId = newFolder.id;
+      }
+
+      const importResults = await importNotes(parseResult, setProgress, parentFolderId);
       setResults(importResults);
       setStep('results');
     } catch (err) {
       setError(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setStep('preview');
     }
-  }, [parseResult]);
+  }, [parseResult, destinationMode, selectedFolderId, newFolderName, createFolder]);
 
   const canDismiss = step !== 'progress';
 
@@ -187,6 +207,69 @@ export function ImportModal() {
                 </div>
               )}
 
+              {/* Destination folder selection */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-text-primary">Destination</div>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                    <input
+                      type="radio"
+                      name="destination"
+                      checked={destinationMode === 'root'}
+                      onChange={() => setDestinationMode('root')}
+                      className="accent-accent"
+                    />
+                    Root (no parent folder)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                    <input
+                      type="radio"
+                      name="destination"
+                      checked={destinationMode === 'existing'}
+                      onChange={() => setDestinationMode('existing')}
+                      className="accent-accent"
+                    />
+                    Existing folder
+                  </label>
+                  {destinationMode === 'existing' && (
+                    <select
+                      value={selectedFolderId ?? ''}
+                      onChange={e => setSelectedFolderId(e.target.value || null)}
+                      className="ml-6 w-[calc(100%-1.5rem)] px-2 py-1.5 text-sm bg-bg-tertiary border border-border-primary rounded text-text-primary"
+                    >
+                      <option value="">Select a folder...</option>
+                      {folders
+                        .slice()
+                        .sort((a, b) => a.path.localeCompare(b.path))
+                        .map(f => (
+                          <option key={f.id} value={f.id}>{f.path}</option>
+                        ))}
+                    </select>
+                  )}
+                  <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                    <input
+                      type="radio"
+                      name="destination"
+                      checked={destinationMode === 'new'}
+                      onChange={() => setDestinationMode('new')}
+                      className="accent-accent"
+                    />
+                    <Plus size={14} className="shrink-0" />
+                    Create new folder
+                  </label>
+                  {destinationMode === 'new' && (
+                    <input
+                      type="text"
+                      value={newFolderName}
+                      onChange={e => setNewFolderName(e.target.value)}
+                      placeholder="Folder name"
+                      className="ml-6 w-[calc(100%-1.5rem)] px-2 py-1.5 text-sm bg-bg-tertiary border border-border-primary rounded text-text-primary placeholder:text-text-muted"
+                      autoFocus
+                    />
+                  )}
+                </div>
+              </div>
+
               {error && (
                 <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
@@ -203,7 +286,8 @@ export function ImportModal() {
                 </button>
                 <button
                   onClick={handleImport}
-                  className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover transition-colors"
+                  disabled={destinationMode === 'existing' && !selectedFolderId}
+                  className="px-4 py-2 text-sm bg-accent text-white rounded hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Import
                 </button>

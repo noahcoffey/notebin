@@ -35,6 +35,8 @@ export function AppShell() {
     openSettings,
     closeSettings,
     importModalOpen,
+    presentationMode,
+    togglePresentationMode,
   } = useUIStore();
 
   const isMobile = useIsMobile();
@@ -79,11 +81,15 @@ export function AppShell() {
           openSettings();
         }
       }
+      if (e.key === 'Escape' && presentationMode) {
+        e.preventDefault();
+        togglePresentationMode();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [quickSwitcherOpen, openQuickSwitcher, closeQuickSwitcher, graphViewOpen, openGraphView, closeGraphView, tasksViewOpen, openTasksView, closeTasksView, settingsOpen, openSettings, closeSettings]);
+  }, [quickSwitcherOpen, openQuickSwitcher, closeQuickSwitcher, graphViewOpen, openGraphView, closeGraphView, tasksViewOpen, openTasksView, closeTasksView, settingsOpen, openSettings, closeSettings, presentationMode, togglePresentationMode]);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">

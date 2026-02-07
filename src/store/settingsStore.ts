@@ -15,6 +15,13 @@ interface SettingsState {
   favoritesCollapsed: boolean;
   notesCollapsed: boolean;
 
+  // JIRA integration (persisted except apiToken)
+  jiraInstanceUrl: string;
+  jiraEmail: string;
+  jiraApiToken: string; // kept in memory only, not persisted
+  jiraBoardId: string;
+  jiraFolderId: string | null;
+
   setEditorFontSize: (size: number) => void;
   setEditorLineHeight: (height: number) => void;
   setShowLineNumbers: (show: boolean) => void;
@@ -27,11 +34,20 @@ interface SettingsState {
   setRecentCollapsed: (collapsed: boolean) => void;
   setFavoritesCollapsed: (collapsed: boolean) => void;
   setNotesCollapsed: (collapsed: boolean) => void;
+
+  setJiraConfig: (config: {
+    instanceUrl?: string;
+    email?: string;
+    apiToken?: string;
+    boardId?: string;
+    folderId?: string | null;
+  }) => void;
+  isJiraConfigured: () => boolean;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       editorFontSize: 16,
       editorLineHeight: 1.6,
       showLineNumbers: false,
@@ -44,6 +60,13 @@ export const useSettingsStore = create<SettingsState>()(
       recentCollapsed: false,
       favoritesCollapsed: false,
       notesCollapsed: false,
+
+      // JIRA integration defaults
+      jiraInstanceUrl: '',
+      jiraEmail: '',
+      jiraApiToken: '',
+      jiraBoardId: '',
+      jiraFolderId: null,
 
       setEditorFontSize: (size: number) => set({ editorFontSize: Math.max(12, Math.min(24, size)) }),
       setEditorLineHeight: (height: number) => set({ editorLineHeight: Math.max(1.2, Math.min(2.4, height)) }),
@@ -61,9 +84,26 @@ export const useSettingsStore = create<SettingsState>()(
       setRecentCollapsed: (collapsed: boolean) => set({ recentCollapsed: collapsed }),
       setFavoritesCollapsed: (collapsed: boolean) => set({ favoritesCollapsed: collapsed }),
       setNotesCollapsed: (collapsed: boolean) => set({ notesCollapsed: collapsed }),
+
+      setJiraConfig: (config) => set({
+        ...(config.instanceUrl !== undefined && { jiraInstanceUrl: config.instanceUrl }),
+        ...(config.email !== undefined && { jiraEmail: config.email }),
+        ...(config.apiToken !== undefined && { jiraApiToken: config.apiToken }),
+        ...(config.boardId !== undefined && { jiraBoardId: config.boardId }),
+        ...(config.folderId !== undefined && { jiraFolderId: config.folderId }),
+      }),
+      isJiraConfigured: () => {
+        const { jiraInstanceUrl, jiraEmail, jiraApiToken, jiraBoardId } = get();
+        return !!(jiraInstanceUrl && jiraEmail && jiraApiToken && jiraBoardId);
+      },
     }),
     {
       name: 'noted-settings',
+      partialize: (state) => {
+        // Exclude jiraApiToken from persistence for security
+        const { jiraApiToken: _, ...rest } = state;
+        return rest;
+      },
     }
   )
 );
