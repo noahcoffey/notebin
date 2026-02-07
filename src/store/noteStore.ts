@@ -6,6 +6,7 @@ interface NoteState {
   notes: Note[];
   folders: Folder[];
   loading: boolean;
+  initialized: boolean;
   error: string | null;
   expandedFolders: Set<string>;
 
@@ -29,6 +30,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   notes: [],
   folders: [],
   loading: false,
+  initialized: false,
   error: null,
   expandedFolders: new Set<string>(),
 
@@ -36,7 +38,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const notes = await noteStorage.getAll();
-      set({ notes, loading: false });
+      set({ notes, loading: false, initialized: true });
     } catch (error) {
       set({ error: (error as Error).message, loading: false });
     }

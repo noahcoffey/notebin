@@ -1,28 +1,74 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNoteStore, useWorkspaceStore, useUIStore } from '../../store';
-import { File, Plus } from 'lucide-react';
+import { File, Folder, Plus } from 'lucide-react';
 
 export function QuickSwitcher() {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { notes, createNote } = useNoteStore();
+  const { notes, folders, createNote, createFolder } = useNoteStore();
   const { openNote } = useWorkspaceStore();
   const { closeQuickSwitcher } = useUIStore();
+
+  // Parse query into folder path and note name
+  const parsedQuery = useMemo(() => {
+    const trimmed = query.trim();
+    const lastSlash = trimmed.lastIndexOf('/');
+    if (lastSlash === -1) {
+      return { folderPath: null, noteName: trimmed, segments: [] as string[] };
+    }
+    const folderPath = trimmed.slice(0, lastSlash);
+    const noteName = trimmed.slice(lastSlash + 1);
+    const segments = folderPath.split('/').filter(Boolean);
+    return { folderPath, noteName, segments };
+  }, [query]);
+
+  // Find matching folder (case-insensitive)
+  const matchedFolder = useMemo(() => {
+    if (!parsedQuery.segments.length) return null;
+    // Build the expected path and try to match
+    let current: typeof folders[number] | null = null;
+    for (const segment of parsedQuery.segments) {
+      const parentId = current?.id ?? null;
+      const match = folders.find(
+        f => f.name.toLowerCase() === segment.toLowerCase() && f.parentId === parentId
+      );
+      if (!match) return null;
+      current = match;
+    }
+    return current;
+  }, [parsedQuery.segments, folders]);
 
   const filteredNotes = useMemo(() => {
     if (!query.trim()) {
       return notes.slice(0, 10);
     }
+    const searchName = parsedQuery.noteName.toLowerCase();
+    if (parsedQuery.folderPath !== null) {
+      // Filter by folder match + note name
+      const folderId = matchedFolder?.id ?? null;
+      return notes
+        .filter(note => {
+          if (folderId && note.folderId !== folderId) return false;
+          if (!folderId && parsedQuery.segments.length > 0) {
+            // No matching folder — match against full path
+            const lowerPath = note.path.toLowerCase();
+            return lowerPath.includes(query.trim().toLowerCase());
+          }
+          return note.title.toLowerCase().includes(searchName);
+        })
+        .slice(0, 10);
+    }
     const lowerQuery = query.toLowerCase();
     return notes
       .filter(note => note.title.toLowerCase().includes(lowerQuery))
       .slice(0, 10);
-  }, [notes, query]);
+  }, [notes, query, parsedQuery, matchedFolder]);
 
-  const showCreateOption = query.trim() && !filteredNotes.some(
-    n => n.title.toLowerCase() === query.toLowerCase()
+  const showCreateOption = query.trim() && parsedQuery.noteName && !filteredNotes.some(
+    n => n.title.toLowerCase() === parsedQuery.noteName.toLowerCase()
+      && (parsedQuery.folderPath === null || n.folderId === matchedFolder?.id)
   );
 
   const totalItems = filteredNotes.length + (showCreateOption ? 1 : 0);
@@ -37,6 +83,33 @@ export function QuickSwitcher() {
     setSelectedIndex(0);
   }
 
+  // Create folders recursively if they don't exist, returns the leaf folder ID
+  const ensureFolders = async (segments: string[]): Promise<string | null> => {
+    if (segments.length === 0) return null;
+
+    let parentId: string | null = null;
+    for (const segment of segments) {
+      // Case-insensitive lookup
+      const existing = folders.find(
+        f => f.name.toLowerCase() === segment.toLowerCase() && f.parentId === parentId
+      );
+      if (existing) {
+        parentId = existing.id;
+      } else {
+        const newFolder = await createFolder(segment, parentId);
+        parentId = newFolder.id;
+      }
+    }
+    return parentId;
+  };
+
+  const handleCreateWithPath = async () => {
+    const folderId = await ensureFolders(parsedQuery.segments);
+    const note = await createNote(parsedQuery.noteName.trim(), folderId);
+    openNote(note.id, note.title);
+    closeQuickSwitcher();
+  };
+
   const handleKeyDown = async (e: React.KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowDown':
@@ -50,9 +123,7 @@ export function QuickSwitcher() {
       case 'Enter':
         e.preventDefault();
         if (showCreateOption && selectedIndex === filteredNotes.length) {
-          const note = await createNote(query.trim());
-          openNote(note.id, note.title);
-          closeQuickSwitcher();
+          await handleCreateWithPath();
         } else if (filteredNotes[selectedIndex]) {
           const note = filteredNotes[selectedIndex];
           openNote(note.id, note.title);
@@ -71,11 +142,10 @@ export function QuickSwitcher() {
     closeQuickSwitcher();
   };
 
-  const handleCreate = async () => {
-    const note = await createNote(query.trim());
-    openNote(note.id, note.title);
-    closeQuickSwitcher();
-  };
+  // Format the create label to show folder path
+  const createLabel = parsedQuery.folderPath
+    ? <>Create "<span className="text-accent">{parsedQuery.noteName}</span>" in <span className="text-text-secondary">{parsedQuery.folderPath}/</span></>
+    : <>Create "<span className="text-accent">{query.trim()}</span>"</>;
 
   return (
     <div
@@ -86,15 +156,25 @@ export function QuickSwitcher() {
         className="w-full max-w-lg mx-4 bg-bg-secondary border border-border-primary rounded-lg shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Find or create a note..."
-          className="w-full px-4 py-3 text-lg bg-transparent border-b border-border-primary focus:outline-none"
-        />
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Find or create a note..."
+            className="w-full px-4 py-3 text-lg bg-transparent border-b border-border-primary focus:outline-none"
+          />
+          {parsedQuery.segments.length > 0 && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs">
+              <Folder size={12} className={matchedFolder ? 'text-accent' : 'text-text-muted'} />
+              <span className={matchedFolder ? 'text-accent' : 'text-text-muted'}>
+                {matchedFolder ? matchedFolder.name : parsedQuery.segments.join('/')}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="max-h-80 overflow-y-auto">
           {filteredNotes.map((note, index) => (
             <div
@@ -119,12 +199,12 @@ export function QuickSwitcher() {
                 flex items-center gap-3 px-4 py-2 cursor-pointer
                 ${selectedIndex === filteredNotes.length ? 'bg-bg-hover' : 'hover:bg-bg-hover'}
               `}
-              onClick={handleCreate}
+              onClick={handleCreateWithPath}
               onMouseEnter={() => setSelectedIndex(filteredNotes.length)}
             >
               <Plus size={18} className="text-accent shrink-0" />
               <div className="text-text-primary">
-                Create "<span className="text-accent">{query.trim()}</span>"
+                {createLabel}
               </div>
             </div>
           )}

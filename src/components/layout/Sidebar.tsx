@@ -8,7 +8,7 @@ import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut } from 
 type SidebarTab = 'files' | 'search';
 
 export function Sidebar() {
-  const { sidebarVisible, sidebarWidth, toggleSidebar, openQuickSwitcher, openSettings, openGraphView } = useUIStore();
+  const { sidebarVisible, sidebarWidth, toggleSidebar, openSettings, openGraphView } = useUIStore();
   const { signOut } = useAuthStore();
   const [activeTab, setActiveTab] = useState<SidebarTab>('files');
   const isMobile = useIsMobile();
@@ -53,32 +53,11 @@ export function Sidebar() {
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={openQuickSwitcher}
-            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            title="Quick switcher (Cmd+O)"
-          >
-            <Search size={16} />
-          </button>
-          <button
             onClick={openGraphView}
             className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Graph view (Cmd+G)"
           >
             <GitBranch size={16} />
-          </button>
-          <button
-            onClick={openSettings}
-            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            title="Settings"
-          >
-            <Settings size={16} />
-          </button>
-          <button
-            onClick={signOut}
-            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            title="Sign out"
-          >
-            <LogOut size={16} />
           </button>
           <button
             onClick={toggleSidebar}
@@ -91,6 +70,22 @@ export function Sidebar() {
       </div>
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {activeTab === 'files' ? <FileExplorer /> : <SearchPanel />}
+      </div>
+      <div className="flex items-center gap-1 px-2 py-1.5 border-t border-border-primary">
+        <button
+          onClick={openSettings}
+          className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+          title="Settings (Cmd+,)"
+        >
+          <Settings size={16} />
+        </button>
+        <button
+          onClick={signOut}
+          className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+          title="Sign out"
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </aside>
   );

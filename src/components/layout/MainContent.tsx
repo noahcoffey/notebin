@@ -12,7 +12,7 @@ const GraphView = lazy(() =>
 
 export function MainContent() {
   const { tabs, activeTabId } = useWorkspaceStore();
-  const { getNoteById } = useNoteStore();
+  const { getNoteById, initialized } = useNoteStore();
   const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView } = useUIStore();
   const [showShareModal, setShowShareModal] = useState(false);
   const isMobile = useIsMobile();
@@ -37,18 +37,18 @@ export function MainContent() {
 
   return (
     <main className="flex flex-col flex-1 min-w-0 h-full bg-bg-primary">
-      <div className="flex items-center bg-bg-secondary">
+      <div className="flex items-stretch h-[38px] bg-bg-secondary border-b border-border-primary">
         {(!sidebarVisible || isMobile) && (
           <button
             onClick={toggleSidebar}
-            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="self-center p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Show sidebar"
           >
             <PanelLeft size={16} />
           </button>
         )}
         {!isMobile ? (
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 h-full">
             <TabBar />
           </div>
         ) : activeNote ? (
@@ -58,7 +58,7 @@ export function MainContent() {
         ) : (
           <div className="flex-1" />
         )}
-        <div className="flex items-center ml-auto">
+        <div className="flex items-center ml-auto self-center">
           {activeNote && (
             <button
               onClick={() => setShowShareModal(true)}
@@ -86,9 +86,9 @@ export function MainContent() {
       <div className="flex-1 overflow-hidden">
         {activeNote ? (
           <MilkdownEditor note={activeNote} />
-        ) : (
+        ) : initialized ? (
           <EmptyState />
-        )}
+        ) : null}
       </div>
     </main>
   );

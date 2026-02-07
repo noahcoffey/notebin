@@ -9,7 +9,7 @@ export function TabBar() {
   }
 
   return (
-    <div className="flex items-center h-[38px] bg-bg-secondary border-b border-border-primary overflow-x-auto scrollbar-thin">
+    <div className="flex items-center overflow-hidden" style={{ height: 'calc(100% + 1px)' }}>
       {tabs.map(tab => (
         <div
           key={tab.id}
