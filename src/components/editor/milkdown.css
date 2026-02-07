@@ -215,6 +215,11 @@
   background: var(--bg-primary);
 }
 
+/* Override nord theme's nth-child(odd) striping that uses prefers-color-scheme */
+.milkdown-editor-wrapper :where(td, th):nth-child(odd) {
+  background-color: var(--bg-secondary);
+}
+
 .milkdown-editor-wrapper th {
   background: var(--bg-secondary);
   font-weight: 600;
