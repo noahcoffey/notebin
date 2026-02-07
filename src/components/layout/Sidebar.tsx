@@ -1,17 +1,46 @@
 import { useState } from 'react';
-import { useUIStore, useAuthStore } from '../../store';
+import { useUIStore, useAuthStore, useSettingsStore, useNoteStore, useWorkspaceStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileExplorer } from '../sidebar/FileExplorer';
 import { SearchPanel } from '../sidebar/SearchPanel';
-import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut, Trash2 } from 'lucide-react';
+import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut, Trash2, Zap, Loader2 } from 'lucide-react';
+import { getActiveSprint, getSprintIssues } from '../../utils/jiraApi';
+import { generateSprintStatus } from '../../utils/generateSprintStatus';
 
 type SidebarTab = 'files' | 'search';
 
 export function Sidebar() {
   const { sidebarVisible, sidebarWidth, toggleSidebar, openSettings, openGraphView, openTrashView } = useUIStore();
   const { signOut } = useAuthStore();
+  const { jiraInstanceUrl, jiraEmail, jiraApiToken, jiraBoardId, jiraFolderId, isJiraConfigured } = useSettingsStore();
+  const { createNote } = useNoteStore();
+  const { openNote } = useWorkspaceStore();
   const [activeTab, setActiveTab] = useState<SidebarTab>('files');
+  const [sprintLoading, setSprintLoading] = useState(false);
   const isMobile = useIsMobile();
+
+  const handleGenerateSprintStatus = async () => {
+    if (!isJiraConfigured()) return;
+    setSprintLoading(true);
+    try {
+      const config = { instanceUrl: jiraInstanceUrl, email: jiraEmail, apiToken: jiraApiToken };
+      const sprint = await getActiveSprint(config, jiraBoardId);
+      if (!sprint) {
+        alert('No active sprint found for this board.');
+        return;
+      }
+      const issues = await getSprintIssues(config, sprint.id);
+      const markdown = generateSprintStatus(sprint, issues);
+      const title = `Sprint Status ${new Date().toISOString().split('T')[0]}`;
+      const note = await createNote(title, jiraFolderId);
+      await useNoteStore.getState().updateNote(note.id, { content: markdown });
+      openNote(note.id, title);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to generate sprint status');
+    } finally {
+      setSprintLoading(false);
+    }
+  };
 
   if (!sidebarVisible) {
     return null;
@@ -72,6 +101,16 @@ export function Sidebar() {
         {activeTab === 'files' ? <FileExplorer /> : <SearchPanel />}
       </div>
       <div className="flex items-center gap-1 px-2 py-1.5 border-t border-border-primary">
+        {isJiraConfigured() && (
+          <button
+            onClick={handleGenerateSprintStatus}
+            disabled={sprintLoading}
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer disabled:opacity-50"
+            title="Generate Sprint Status"
+          >
+            {sprintLoading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+          </button>
+        )}
         <button
           onClick={openSettings}
           className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
