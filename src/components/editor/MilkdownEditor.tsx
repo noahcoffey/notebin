@@ -271,7 +271,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
               try {
                 const resolvedPos = view.state.doc.resolve(Math.min(pos, view.state.doc.content.size));
                 view.dispatch(view.state.tr.setSelection(
-                  view.state.selection.constructor.near(resolvedPos)
+                  (view.state.selection.constructor as unknown as { near: (pos: typeof resolvedPos) => typeof view.state.selection }).near(resolvedPos)
                 ));
                 view.focus();
                 const coords = view.coordsAtPos(Math.min(pos, view.state.doc.content.size));
