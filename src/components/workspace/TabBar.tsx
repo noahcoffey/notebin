@@ -34,7 +34,7 @@ export function TabBar() {
             }}
             className={`
               p-0.5 rounded hover:bg-bg-active
-              ${tab.id === activeTabId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+              ${tab.id === activeTabId ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100'}
             `}
           >
             <X size={14} />

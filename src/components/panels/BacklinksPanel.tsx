@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useWorkspaceStore, useNoteStore } from '../../store';
+import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { backlinkStorage } from '../../services/storage';
 import type { Backlink } from '../../types';
 import { Link2, FileText } from 'lucide-react';
@@ -10,6 +11,8 @@ export function BacklinksPanel() {
 
   const { tabs, activeTabId, openNote } = useWorkspaceStore();
   const { getNoteById, notes } = useNoteStore();
+  const { rightPanelVisible, toggleRightPanel } = useUIStore();
+  const isMobile = useIsMobile();
 
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
@@ -39,6 +42,11 @@ export function BacklinksPanel() {
       });
     return () => { cancelled = true; };
   }, [activeNoteId]);
+
+  const handleOpenNote = (id: string, title: string) => {
+    openNote(id, title);
+    if (isMobile && rightPanelVisible) toggleRightPanel();
+  };
 
   if (!activeNote) {
     return (
@@ -98,7 +106,7 @@ export function BacklinksPanel() {
           <div
             key={grouped.sourceNoteId}
             className="px-3 py-2 hover:bg-bg-hover cursor-pointer"
-            onClick={() => openNote(sourceNote.id, sourceNote.title)}
+            onClick={() => handleOpenNote(sourceNote.id, sourceNote.title)}
           >
             <div className="flex items-center gap-2 text-sm text-text-primary">
               <FileText size={14} className="text-text-muted shrink-0" />

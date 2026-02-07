@@ -501,7 +501,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
       const rect = listItem.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
 
-      if (clickX > 30) return;
+      if (clickX > 44) return;
 
       e.preventDefault();
       e.stopPropagation();

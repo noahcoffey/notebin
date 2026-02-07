@@ -79,11 +79,11 @@ export function QuickSwitcher() {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-start justify-center pt-[20vh] z-50"
+      className="fixed inset-0 bg-black/50 flex items-start justify-center pt-[10vh] md:pt-[20vh] z-50"
       onClick={closeQuickSwitcher}
     >
       <div
-        className="w-full max-w-lg bg-bg-secondary border border-border-primary rounded-lg shadow-2xl overflow-hidden"
+        className="w-full max-w-lg mx-4 bg-bg-secondary border border-border-primary rounded-lg shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <input

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUIStore, useAuthStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileExplorer } from '../sidebar/FileExplorer';
 import { SearchPanel } from '../sidebar/SearchPanel';
 import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut } from 'lucide-react';
@@ -10,6 +11,7 @@ export function Sidebar() {
   const { sidebarVisible, sidebarWidth, toggleSidebar, openQuickSwitcher, openSettings, openGraphView } = useUIStore();
   const { signOut } = useAuthStore();
   const [activeTab, setActiveTab] = useState<SidebarTab>('files');
+  const isMobile = useIsMobile();
 
   if (!sidebarVisible) {
     return null;
@@ -17,14 +19,18 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col bg-bg-secondary border-r border-border-primary h-full"
-      style={{ width: sidebarWidth }}
+      className={
+        isMobile
+          ? 'fixed inset-y-0 left-0 z-40 flex flex-col bg-bg-secondary border-r border-border-primary w-[85vw] max-w-[320px]'
+          : 'flex flex-col bg-bg-secondary border-r border-border-primary h-full'
+      }
+      style={isMobile ? undefined : { width: sidebarWidth }}
     >
       <div className="flex items-center justify-between h-[38px] px-2 border-b border-border-primary">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setActiveTab('files')}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${
+            className={`p-2.5 md:p-1.5 rounded transition-colors cursor-pointer ${
               activeTab === 'files'
                 ? 'bg-bg-hover text-text-primary'
                 : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'
@@ -35,7 +41,7 @@ export function Sidebar() {
           </button>
           <button
             onClick={() => setActiveTab('search')}
-            className={`p-1.5 rounded transition-colors cursor-pointer ${
+            className={`p-2.5 md:p-1.5 rounded transition-colors cursor-pointer ${
               activeTab === 'search'
                 ? 'bg-bg-hover text-text-primary'
                 : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'
@@ -48,35 +54,35 @@ export function Sidebar() {
         <div className="flex items-center gap-1">
           <button
             onClick={openQuickSwitcher}
-            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Quick switcher (Cmd+O)"
           >
             <Search size={16} />
           </button>
           <button
             onClick={openGraphView}
-            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Graph view (Cmd+G)"
           >
             <GitBranch size={16} />
           </button>
           <button
             onClick={openSettings}
-            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Settings"
           >
             <Settings size={16} />
           </button>
           <button
             onClick={signOut}
-            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Sign out"
           >
             <LogOut size={16} />
           </button>
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Close sidebar"
           >
             <PanelLeftClose size={16} />

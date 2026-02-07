@@ -3,6 +3,7 @@ import { TabBar } from '../workspace/TabBar';
 import { MilkdownEditor } from '../editor/MilkdownEditor';
 import { ShareModal } from '../share/ShareModal';
 import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileText, PanelLeft, PanelRight, Share2, Loader2 } from 'lucide-react';
 
 const GraphView = lazy(() =>
@@ -14,6 +15,7 @@ export function MainContent() {
   const { getNoteById } = useNoteStore();
   const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView } = useUIStore();
   const [showShareModal, setShowShareModal] = useState(false);
+  const isMobile = useIsMobile();
 
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
@@ -36,10 +38,10 @@ export function MainContent() {
   return (
     <main className="flex flex-col flex-1 min-w-0 h-full bg-bg-primary">
       <div className="flex items-center bg-bg-secondary">
-        {!sidebarVisible && (
+        {(!sidebarVisible || isMobile) && (
           <button
             onClick={toggleSidebar}
-            className="p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Show sidebar"
           >
             <PanelLeft size={16} />
@@ -51,16 +53,16 @@ export function MainContent() {
         {activeNote && (
           <button
             onClick={() => setShowShareModal(true)}
-            className="p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Share note"
           >
             <Share2 size={16} />
           </button>
         )}
-        {!rightPanelVisible && (
+        {(!rightPanelVisible || isMobile) && (
           <button
             onClick={toggleRightPanel}
-            className="p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             title="Show backlinks panel"
           >
             <PanelRight size={16} />

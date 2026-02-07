@@ -6,9 +6,15 @@
 
 .milkdown-editor-wrapper .milkdown {
   height: 100%;
-  padding: 1rem 2rem;
+  padding: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+@media (min-width: 768px) {
+  .milkdown-editor-wrapper .milkdown {
+    padding: 1rem 2rem;
+  }
 }
 
 .milkdown-editor-wrapper .editor {

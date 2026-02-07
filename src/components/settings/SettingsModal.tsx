@@ -92,7 +92,7 @@ export function SettingsModal() {
       onClick={closeSettings}
     >
       <div
-        className="w-full max-w-2xl bg-bg-secondary border border-border-primary rounded-lg shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl mx-4 bg-bg-secondary border border-border-primary rounded-lg shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary">
@@ -105,12 +105,12 @@ export function SettingsModal() {
           </button>
         </div>
 
-        <div className="flex h-[400px]">
-          {/* Sidebar */}
-          <div className="w-40 border-r border-border-primary p-2">
+        <div className="flex flex-col md:flex-row max-h-[80vh]">
+          {/* Tab bar / Sidebar */}
+          <div className="flex flex-row md:flex-col md:w-40 border-b md:border-b-0 md:border-r border-border-primary p-2 overflow-x-auto md:overflow-x-visible">
             <button
               onClick={() => setActiveTab('editor')}
-              className={`w-full text-left px-3 py-2 rounded text-sm ${
+              className={`whitespace-nowrap text-left px-3 py-2 rounded text-sm ${
                 activeTab === 'editor'
                   ? 'bg-bg-hover text-text-primary'
                   : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'
@@ -120,7 +120,7 @@ export function SettingsModal() {
             </button>
             <button
               onClick={() => setActiveTab('data')}
-              className={`w-full text-left px-3 py-2 rounded text-sm ${
+              className={`whitespace-nowrap text-left px-3 py-2 rounded text-sm ${
                 activeTab === 'data'
                   ? 'bg-bg-hover text-text-primary'
                   : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'

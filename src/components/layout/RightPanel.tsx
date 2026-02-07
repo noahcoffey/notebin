@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUIStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { BacklinksPanel } from '../panels/BacklinksPanel';
 import { OutlinePanel } from '../panels/OutlinePanel';
 import { PanelRightClose, Link2, List } from 'lucide-react';
@@ -9,6 +10,7 @@ type PanelTab = 'backlinks' | 'outline';
 export function RightPanel() {
   const { rightPanelVisible, rightPanelWidth, toggleRightPanel } = useUIStore();
   const [activeTab, setActiveTab] = useState<PanelTab>('backlinks');
+  const isMobile = useIsMobile();
 
   if (!rightPanelVisible) {
     return null;
@@ -16,8 +18,12 @@ export function RightPanel() {
 
   return (
     <aside
-      className="flex flex-col bg-bg-secondary border-l border-border-primary h-full"
-      style={{ width: rightPanelWidth }}
+      className={
+        isMobile
+          ? 'fixed inset-y-0 right-0 z-40 flex flex-col bg-bg-secondary border-l border-border-primary w-[85vw] max-w-[320px]'
+          : 'flex flex-col bg-bg-secondary border-l border-border-primary h-full'
+      }
+      style={isMobile ? undefined : { width: rightPanelWidth }}
     >
       <div className="flex items-center justify-between h-[38px] px-2 border-b border-border-primary">
         <div className="flex items-center gap-1">
@@ -48,7 +54,7 @@ export function RightPanel() {
         </div>
         <button
           onClick={toggleRightPanel}
-          className="p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+          className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
           title="Close panel"
         >
           <PanelRightClose size={16} />

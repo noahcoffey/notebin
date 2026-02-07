@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useNoteStore, useWorkspaceStore, useSettingsStore } from '../../store';
+import { useState, useCallback, useRef } from 'react';
+import { useNoteStore, useWorkspaceStore, useSettingsStore, useUIStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import type { FileTreeItem } from '../../types';
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock } from 'lucide-react';
 import { ContextMenu, type ContextMenuItem } from '../common/ContextMenu';
@@ -14,6 +15,8 @@ export function FileExplorer() {
   const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
   const { openNote, closeTab, tabs, activeTabId } = useWorkspaceStore();
   const { showRecentNotes } = useSettingsStore();
+  const { sidebarVisible, toggleSidebar } = useUIStore();
+  const isMobile = useIsMobile();
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNoteId = activeTab?.noteId || null;
 
@@ -33,10 +36,15 @@ export function FileExplorer() {
 
   const tree = getFileTree();
 
+  const handleOpenNote = useCallback((id: string, title: string) => {
+    openNote(id, title);
+    if (isMobile && sidebarVisible) toggleSidebar();
+  }, [openNote, isMobile, sidebarVisible, toggleSidebar]);
+
   const handleCreateNote = async () => {
     if (newItemName.trim()) {
       const note = await createNote(newItemName.trim(), newItemParent);
-      openNote(note.id, note.title);
+      handleOpenNote(note.id, note.title);
       setNewItemName('');
       setShowNewNote(false);
       setNewItemParent(null);
@@ -98,6 +106,30 @@ export function FileExplorer() {
     e.preventDefault();
     e.stopPropagation();
     setContextMenu({ x: e.clientX, y: e.clientY, item });
+  };
+
+  // Long-press handler for mobile context menu
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent, item: FileTreeItem) => {
+    const touch = e.touches[0];
+    longPressTimerRef.current = setTimeout(() => {
+      setContextMenu({ x: touch.clientX, y: touch.clientY, item });
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   };
 
   const handleRename = (item: FileTreeItem) => {
@@ -173,11 +205,11 @@ export function FileExplorer() {
             {recentNotes.map(note => (
               <div
                 key={note.id}
-                className={`flex items-center gap-1 px-2 py-1 text-sm cursor-pointer hover:bg-bg-hover ${
+                className={`flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover ${
                   note.id === activeNoteId ? 'bg-bg-hover text-accent' : 'text-text-primary'
                 }`}
                 style={{ paddingLeft: 28 }}
-                onClick={() => openNote(note.id, note.title)}
+                onClick={() => handleOpenNote(note.id, note.title)}
               >
                 <File size={16} className={`shrink-0 ${note.id === activeNoteId ? 'text-accent' : 'text-text-muted'}`} />
                 <span className="truncate">{note.title}</span>
@@ -196,7 +228,7 @@ export function FileExplorer() {
               setShowNewNote(true);
               setNewItemParent(null);
             }}
-            className="p-1.5 rounded hover:bg-bg-hover cursor-pointer text-text-muted hover:text-text-primary transition-colors"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover cursor-pointer text-text-muted hover:text-text-primary transition-colors"
             title="New note"
           >
             <FilePlus size={16} />
@@ -206,7 +238,7 @@ export function FileExplorer() {
               setShowNewFolder(true);
               setNewItemParent(null);
             }}
-            className="p-1.5 rounded hover:bg-bg-hover cursor-pointer text-text-muted hover:text-text-primary transition-colors"
+            className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover cursor-pointer text-text-muted hover:text-text-primary transition-colors"
             title="New folder"
           >
             <FolderPlus size={16} />
@@ -280,7 +312,7 @@ export function FileExplorer() {
             item={item}
             depth={0}
             onToggle={toggleFolder}
-            onOpenNote={(id, title) => openNote(id, title)}
+            onOpenNote={handleOpenNote}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
@@ -288,6 +320,9 @@ export function FileExplorer() {
             onDrop={handleDrop}
             dragOverFolderId={dragOverFolderId}
             onContextMenu={handleContextMenu}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
             renameItem={renameItem}
             renameValue={renameValue}
             onRenameChange={setRenameValue}
@@ -325,6 +360,9 @@ interface FileTreeNodeProps {
   onDrop: (e: React.DragEvent, folderId: string | null) => void;
   dragOverFolderId: string | null | undefined;
   onContextMenu: (e: React.MouseEvent, item: FileTreeItem) => void;
+  onTouchStart: (e: React.TouchEvent, item: FileTreeItem) => void;
+  onTouchEnd: () => void;
+  onTouchMove: () => void;
   renameItem: FileTreeItem | null;
   renameValue: string;
   onRenameChange: (value: string) => void;
@@ -345,6 +383,9 @@ function FileTreeNode({
   onDrop,
   dragOverFolderId,
   onContextMenu,
+  onTouchStart,
+  onTouchEnd,
+  onTouchMove,
   renameItem,
   renameValue,
   onRenameChange,
@@ -362,12 +403,15 @@ function FileTreeNode({
     return (
       <div>
         <div
-          className={`flex items-center gap-1 px-2 py-1 text-sm cursor-pointer hover:bg-bg-hover text-text-secondary transition-colors ${
+          className={`flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover text-text-secondary transition-colors ${
             isDragOver ? 'bg-accent/20 outline outline-1 outline-accent' : ''
           }`}
           style={{ paddingLeft }}
           onClick={() => onToggle(item.id)}
           onContextMenu={(e) => onContextMenu(e, item)}
+          onTouchStart={(e) => onTouchStart(e, item)}
+          onTouchEnd={onTouchEnd}
+          onTouchMove={onTouchMove}
           onDragOver={(e) => {
             e.stopPropagation();
             onDragOver(e, item.id);
@@ -422,6 +466,9 @@ function FileTreeNode({
                 onDrop={onDrop}
                 dragOverFolderId={dragOverFolderId}
                 onContextMenu={onContextMenu}
+                onTouchStart={onTouchStart}
+                onTouchEnd={onTouchEnd}
+                onTouchMove={onTouchMove}
                 renameItem={renameItem}
                 renameValue={renameValue}
                 onRenameChange={onRenameChange}
@@ -438,12 +485,15 @@ function FileTreeNode({
 
   return (
     <div
-      className={`flex items-center gap-1 px-2 py-1 text-sm cursor-pointer hover:bg-bg-hover text-text-primary ${
+      className={`flex items-center gap-1 px-2 py-2 md:py-1 text-sm cursor-pointer hover:bg-bg-hover text-text-primary ${
         isActive ? 'bg-bg-hover text-accent' : ''
       }`}
       style={{ paddingLeft: paddingLeft + 20 }}
       onClick={() => !isRenaming && onOpenNote(item.id, item.name)}
       onContextMenu={(e) => onContextMenu(e, item)}
+      onTouchStart={(e) => onTouchStart(e, item)}
+      onTouchEnd={onTouchEnd}
+      onTouchMove={onTouchMove}
       draggable={!isRenaming}
       onDragStart={(e) => onDragStart(e, item.id)}
       onDragEnd={onDragEnd}

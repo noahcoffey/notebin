@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useNoteStore, useWorkspaceStore } from '../../store';
+import { useNoteStore, useWorkspaceStore, useUIStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { searchService } from '../../services/search';
 import type { SearchResult } from '../../services/search';
 import { Search, FileText, X, Hash, Folder } from 'lucide-react';
@@ -13,6 +14,8 @@ export function SearchPanel() {
 
   const { notes } = useNoteStore();
   const { openNote } = useWorkspaceStore();
+  const { sidebarVisible, toggleSidebar } = useUIStore();
+  const isMobile = useIsMobile();
 
   // Index notes when they change
   useEffect(() => {
@@ -43,6 +46,7 @@ export function SearchPanel() {
 
   const handleResultClick = (result: SearchResult) => {
     openNote(result.id, result.title);
+    if (isMobile && sidebarVisible) toggleSidebar();
   };
 
   const clearSearch = () => {

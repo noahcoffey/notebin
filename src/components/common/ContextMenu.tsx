@@ -25,6 +25,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       }
     };
 
+    const handleTouchOutside = (e: TouchEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -32,10 +38,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleTouchOutside);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleTouchOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);

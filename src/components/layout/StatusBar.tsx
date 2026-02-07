@@ -24,7 +24,7 @@ export function StatusBar() {
           <span>No note selected</span>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="hidden md:flex items-center gap-3">
         <ShortcutHint keys={['⌘', 'O']} label="Quick Open" />
         <ShortcutHint keys={['⌘', 'G']} label="Graph" />
         <ShortcutHint keys={['⌘', 'S']} label="Save" />

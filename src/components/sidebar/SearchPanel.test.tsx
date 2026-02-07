@@ -10,6 +10,14 @@ vi.mock('../../store', () => ({
   useWorkspaceStore: vi.fn(() => ({
     openNote: vi.fn(),
   })),
+  useUIStore: vi.fn(() => ({
+    sidebarVisible: false,
+    toggleSidebar: vi.fn(),
+  })),
+}));
+
+vi.mock('../../hooks/useIsMobile', () => ({
+  useIsMobile: vi.fn(() => false),
 }));
 
 vi.mock('../../services/search', () => ({

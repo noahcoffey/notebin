@@ -1,10 +1,11 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, useRef, lazy, Suspense } from 'react';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { RightPanel } from './RightPanel';
 import { StatusBar } from './StatusBar';
 import { QuickSwitcher } from '../sidebar/QuickSwitcher';
 import { useNoteStore, useUIStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const SettingsModal = lazy(() =>
   import('../settings/SettingsModal').then(m => ({ default: m.SettingsModal }))
@@ -13,6 +14,10 @@ const SettingsModal = lazy(() =>
 export function AppShell() {
   const { loadNotes, loadFolders } = useNoteStore();
   const {
+    sidebarVisible,
+    rightPanelVisible,
+    toggleSidebar,
+    toggleRightPanel,
     quickSwitcherOpen,
     openQuickSwitcher,
     closeQuickSwitcher,
@@ -24,10 +29,30 @@ export function AppShell() {
     closeSettings,
   } = useUIStore();
 
+  const isMobile = useIsMobile();
+  const prevIsMobileRef = useRef(isMobile);
+
   useEffect(() => {
     loadNotes();
     loadFolders();
   }, [loadNotes, loadFolders]);
+
+  // Auto-close panels when entering mobile mode
+  useEffect(() => {
+    if (isMobile && !prevIsMobileRef.current) {
+      if (sidebarVisible) toggleSidebar();
+      if (rightPanelVisible) toggleRightPanel();
+    }
+    prevIsMobileRef.current = isMobile;
+  }, [isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // On first mount, close panels if already mobile (handles persisted localStorage state)
+  useEffect(() => {
+    if (isMobile) {
+      if (sidebarVisible) toggleSidebar();
+      if (rightPanelVisible) toggleRightPanel();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,7 +90,21 @@ export function AppShell() {
     <div className="flex flex-col h-screen w-screen overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
+        {/* Mobile backdrop for sidebar */}
+        {isMobile && sidebarVisible && (
+          <div
+            className="fixed inset-0 bg-black/40 z-30"
+            onClick={toggleSidebar}
+          />
+        )}
         <MainContent />
+        {/* Mobile backdrop for right panel */}
+        {isMobile && rightPanelVisible && (
+          <div
+            className="fixed inset-0 bg-black/40 z-30"
+            onClick={toggleRightPanel}
+          />
+        )}
         <RightPanel />
       </div>
       <StatusBar />

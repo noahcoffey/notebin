@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { useNoteStore, useWorkspaceStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { buildGraph, buildLocalGraph, type GraphNode, type GraphLink, type GraphData } from '../../services/graph';
 import { X, Maximize2, Minimize2, Focus } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export function GraphView({ onClose }: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { notes } = useNoteStore();
   const { openNote, tabs, activeTabId } = useWorkspaceStore();
+  const isMobile = useIsMobile();
   const [isLocalView, setIsLocalView] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -226,7 +228,7 @@ export function GraphView({ onClose }: GraphViewProps) {
         />
       </div>
       <div className="px-3 py-1.5 text-xs text-text-muted border-t border-border-primary bg-bg-secondary">
-        {notes.length} notes • Drag to move • Scroll to zoom • Click to open
+        {notes.length} notes • Drag to move • {isMobile ? 'Pinch' : 'Scroll'} to zoom • Click to open
       </div>
     </div>
   );
