@@ -17,6 +17,8 @@ interface UIState {
   tasksViewOpen: boolean;
   trashViewOpen: boolean;
   importModalOpen: boolean;
+  presentationMode: boolean;
+  prePresentationState: { sidebarVisible: boolean; rightPanelVisible: boolean } | null;
 
   toggleSidebar: () => void;
   setSidebarWidth: (width: number) => void;
@@ -34,6 +36,7 @@ interface UIState {
   closeTrashView: () => void;
   openImportModal: () => void;
   closeImportModal: () => void;
+  togglePresentationMode: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -49,6 +52,8 @@ export const useUIStore = create<UIState>()(
       tasksViewOpen: false,
       trashViewOpen: false,
       importModalOpen: false,
+      presentationMode: false,
+      prePresentationState: null,
 
       toggleSidebar: () => set(state => ({ sidebarVisible: !state.sidebarVisible })),
       setSidebarWidth: (width: number) => set({ sidebarWidth: Math.max(200, Math.min(400, width)) }),
@@ -66,6 +71,29 @@ export const useUIStore = create<UIState>()(
       closeTrashView: () => set({ trashViewOpen: false }),
       openImportModal: () => set({ importModalOpen: true }),
       closeImportModal: () => set({ importModalOpen: false }),
+      togglePresentationMode: () => set(state => {
+        if (state.presentationMode) {
+          // Exiting: restore previous state
+          const prev = state.prePresentationState;
+          return {
+            presentationMode: false,
+            prePresentationState: null,
+            sidebarVisible: prev?.sidebarVisible ?? state.sidebarVisible,
+            rightPanelVisible: prev?.rightPanelVisible ?? state.rightPanelVisible,
+          };
+        } else {
+          // Entering: save state and hide panels
+          return {
+            presentationMode: true,
+            prePresentationState: {
+              sidebarVisible: state.sidebarVisible,
+              rightPanelVisible: state.rightPanelVisible,
+            },
+            sidebarVisible: false,
+            rightPanelVisible: false,
+          };
+        }
+      }),
     }),
     {
       name: 'noted-ui',

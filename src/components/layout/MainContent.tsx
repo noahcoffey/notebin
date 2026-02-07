@@ -3,7 +3,7 @@ import { MilkdownEditor } from '../editor/MilkdownEditor';
 import { ShareModal } from '../share/ShareModal';
 import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { FileText, PanelLeft, PanelRight, Share2, Loader2, CheckSquare } from 'lucide-react';
+import { FileText, PanelLeft, PanelRight, Share2, Loader2, CheckSquare, X } from 'lucide-react';
 
 const GraphView = lazy(() =>
   import('../graph/GraphView').then(m => ({ default: m.GraphView }))
@@ -20,7 +20,7 @@ const TrashView = lazy(() =>
 export function MainContent() {
   const { tabs, activeTabId } = useWorkspaceStore();
   const { getNoteById, initialized } = useNoteStore();
-  const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView, tasksViewOpen, openTasksView, closeTasksView, trashViewOpen, closeTrashView } = useUIStore();
+  const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView, tasksViewOpen, openTasksView, closeTasksView, trashViewOpen, closeTrashView, presentationMode, togglePresentationMode } = useUIStore();
   const [showShareModal, setShowShareModal] = useState(false);
   const isMobile = useIsMobile();
 
@@ -84,7 +84,7 @@ export function MainContent() {
   return (
     <main className="flex flex-col flex-1 min-w-0 h-full bg-bg-primary">
       <div className="flex items-stretch h-[38px] bg-bg-secondary border-b border-border-primary">
-        {(!sidebarVisible || isMobile) && (
+        {!presentationMode && (!sidebarVisible || isMobile) && (
           <button
             onClick={toggleSidebar}
             className="self-center p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
@@ -101,14 +101,26 @@ export function MainContent() {
           <div className="flex-1" />
         )}
         <div className="flex items-center ml-auto self-center">
-          <button
-            onClick={tasksViewOpen ? closeTasksView : openTasksView}
-            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            title="Tasks (Cmd+Shift+T)"
-          >
-            <CheckSquare size={16} />
-          </button>
-          {activeNote && (
+          {presentationMode && (
+            <button
+              onClick={togglePresentationMode}
+              className="flex items-center gap-1.5 px-2 py-1 m-1 rounded text-xs bg-accent/15 text-accent hover:bg-accent/25 transition-colors cursor-pointer"
+              title="Exit presentation mode (Escape)"
+            >
+              <X size={14} />
+              <span>Exit Presentation</span>
+            </button>
+          )}
+          {!presentationMode && (
+            <button
+              onClick={tasksViewOpen ? closeTasksView : openTasksView}
+              className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+              title="Tasks (Cmd+Shift+T)"
+            >
+              <CheckSquare size={16} />
+            </button>
+          )}
+          {!presentationMode && activeNote && (
             <button
               onClick={() => setShowShareModal(true)}
               className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
@@ -117,7 +129,7 @@ export function MainContent() {
               <Share2 size={16} />
             </button>
           )}
-          {(!rightPanelVisible || isMobile) && (
+          {!presentationMode && (!rightPanelVisible || isMobile) && (
             <button
               onClick={toggleRightPanel}
               className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
