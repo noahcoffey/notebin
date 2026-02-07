@@ -1,4 +1,4 @@
-import { useEffect, useRef, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { RightPanel } from './RightPanel';
@@ -30,29 +30,11 @@ export function AppShell() {
   } = useUIStore();
 
   const isMobile = useIsMobile();
-  const prevIsMobileRef = useRef(isMobile);
 
   useEffect(() => {
     loadNotes();
     loadFolders();
   }, [loadNotes, loadFolders]);
-
-  // Auto-close panels when entering mobile mode
-  useEffect(() => {
-    if (isMobile && !prevIsMobileRef.current) {
-      if (sidebarVisible) toggleSidebar();
-      if (rightPanelVisible) toggleRightPanel();
-    }
-    prevIsMobileRef.current = isMobile;
-  }, [isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // On first mount, close panels if already mobile (handles persisted localStorage state)
-  useEffect(() => {
-    if (isMobile) {
-      if (sidebarVisible) toggleSidebar();
-      if (rightPanelVisible) toggleRightPanel();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

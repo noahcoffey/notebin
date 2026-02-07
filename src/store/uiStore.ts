@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const isMobileDevice =
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(max-width: 767px)').matches;
+
 interface UIState {
   sidebarVisible: boolean;
   sidebarWidth: number;
@@ -25,9 +30,9 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      sidebarVisible: true,
+      sidebarVisible: !isMobileDevice,
       sidebarWidth: 260,
-      rightPanelVisible: true,
+      rightPanelVisible: !isMobileDevice,
       rightPanelWidth: 280,
       quickSwitcherOpen: false,
       settingsOpen: false,
@@ -52,6 +57,15 @@ export const useUIStore = create<UIState>()(
         rightPanelVisible: state.rightPanelVisible,
         rightPanelWidth: state.rightPanelWidth,
       }),
+      merge: (persistedState, currentState) => {
+        const merged = { ...currentState, ...(persistedState as Partial<UIState>) };
+        // On mobile, always start with panels closed regardless of persisted state
+        if (isMobileDevice) {
+          merged.sidebarVisible = false;
+          merged.rightPanelVisible = false;
+        }
+        return merged;
+      },
     }
   )
 );
