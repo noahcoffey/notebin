@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNoteStore, useWorkspaceStore, useUIStore } from '../../store';
-import { File, Folder, Plus } from 'lucide-react';
+import { File, Folder as FolderIcon, Plus } from 'lucide-react';
+import type { Folder } from '../../types';
 
 export function QuickSwitcher() {
   const [query, setQuery] = useState('');
@@ -25,13 +26,13 @@ export function QuickSwitcher() {
   }, [query]);
 
   // Find matching folder (case-insensitive)
-  const matchedFolder = useMemo(() => {
+  const matchedFolder = useMemo((): Folder | null => {
     if (!parsedQuery.segments.length) return null;
     // Build the expected path and try to match
-    let current: typeof folders[number] | null = null;
+    let current: Folder | null = null;
     for (const segment of parsedQuery.segments) {
-      const parentId = current?.id ?? null;
-      const match = folders.find(
+      const parentId: string | null = current ? current.id : null;
+      const match: Folder | undefined = folders.find(
         f => f.name.toLowerCase() === segment.toLowerCase() && f.parentId === parentId
       );
       if (!match) return null;
@@ -168,7 +169,7 @@ export function QuickSwitcher() {
           />
           {parsedQuery.segments.length > 0 && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs">
-              <Folder size={12} className={matchedFolder ? 'text-accent' : 'text-text-muted'} />
+              <FolderIcon size={12} className={matchedFolder ? 'text-accent' : 'text-text-muted'} />
               <span className={matchedFolder ? 'text-accent' : 'text-text-muted'}>
                 {matchedFolder ? matchedFolder.name : parsedQuery.segments.join('/')}
               </span>
