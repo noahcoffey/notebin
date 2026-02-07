@@ -215,8 +215,9 @@
   background: var(--bg-primary);
 }
 
-/* Override nord theme's nth-child(odd) striping that uses prefers-color-scheme */
-.milkdown-editor-wrapper :where(td, th):nth-child(odd) {
+/* Override nord theme's .milkdown-theme-nord.prose :where(td,th):nth-child(odd) — specificity (0,3,0) */
+.milkdown-editor-wrapper .milkdown td:nth-child(odd),
+.milkdown-editor-wrapper .milkdown th:nth-child(odd) {
   background-color: var(--bg-secondary);
 }
 
@@ -225,9 +226,9 @@
   font-weight: 600;
 }
 
-.milkdown-editor-wrapper tr:hover td,
-.milkdown-editor-wrapper tr:hover th {
-  background: var(--bg-hover);
+.milkdown-editor-wrapper .milkdown tr:hover td,
+.milkdown-editor-wrapper .milkdown tr:hover th {
+  background-color: var(--bg-hover);
 }
 
 /* Strikethrough */
