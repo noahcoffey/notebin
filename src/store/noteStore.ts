@@ -16,6 +16,7 @@ interface NoteState {
   deleteNote: (id: string) => Promise<void>;
   renameNote: (id: string, newTitle: string) => Promise<void>;
   moveNote: (noteId: string, targetFolderId: string | null) => Promise<void>;
+  moveFolder: (folderId: string, targetParentId: string | null) => Promise<void>;
   createFolder: (name: string, parentId?: string | null) => Promise<Folder>;
   deleteFolder: (id: string) => Promise<void>;
   renameFolder: (id: string, newName: string) => Promise<void>;
@@ -120,6 +121,65 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         n.id === noteId ? { ...n, folderId: targetFolderId, path: newPath, updatedAt: new Date() } : n
       ),
     }));
+  },
+
+  moveFolder: async (folderId: string, targetParentId: string | null) => {
+    const { folders, notes } = get();
+    const folder = folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    // Don't move into itself
+    if (targetParentId === folderId) return;
+
+    // Don't move into a descendant
+    const isDescendant = (parentId: string | null): boolean => {
+      if (!parentId) return false;
+      if (parentId === folderId) return true;
+      const parent = folders.find(f => f.id === parentId);
+      return parent ? isDescendant(parent.parentId) : false;
+    };
+    if (isDescendant(targetParentId)) return;
+
+    // Don't move if already in the target
+    if (folder.parentId === targetParentId) return;
+
+    // Compute new path
+    let newPath = `/${folder.name}`;
+    if (targetParentId) {
+      const parent = folders.find(f => f.id === targetParentId);
+      if (parent) {
+        newPath = `${parent.path}/${folder.name}`;
+      }
+    }
+
+    const oldPath = folder.path;
+
+    await folderStorage.update(folderId, { parentId: targetParentId, path: newPath });
+
+    // Update paths of all descendant folders and their notes
+    const updatedFolders = folders.map(f => {
+      if (f.id === folderId) {
+        return { ...f, parentId: targetParentId, path: newPath, updatedAt: new Date() };
+      }
+      if (f.path.startsWith(oldPath + '/')) {
+        const updatedPath = newPath + f.path.slice(oldPath.length);
+        folderStorage.update(f.id, { path: updatedPath });
+        return { ...f, path: updatedPath, updatedAt: new Date() };
+      }
+      return f;
+    });
+
+    // Update paths of notes inside the moved folder tree
+    const updatedNotes = notes.map(n => {
+      if (n.path.startsWith(oldPath + '/')) {
+        const updatedPath = newPath + n.path.slice(oldPath.length);
+        noteStorage.update(n.id, { path: updatedPath });
+        return { ...n, path: updatedPath, updatedAt: new Date() };
+      }
+      return n;
+    });
+
+    set({ folders: updatedFolders, notes: updatedNotes });
   },
 
   createFolder: async (name: string, parentId?: string | null) => {

@@ -12,7 +12,7 @@ interface ContextMenuState {
 }
 
 export function FileExplorer() {
-  const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
+  const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, moveFolder, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
   const { openNote, closeTab, setActiveTab, tabs, activeTabId } = useWorkspaceStore();
   const { showRecentNotes } = useSettingsStore();
   const { sidebarVisible, toggleSidebar } = useUIStore();
@@ -71,8 +71,9 @@ export function FileExplorer() {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, noteId: string) => {
-    e.dataTransfer.setData('text/plain', noteId);
+  const handleDragStart = (e: React.DragEvent, id: string, type: 'note' | 'folder') => {
+    e.dataTransfer.setData('application/x-item-id', id);
+    e.dataTransfer.setData('application/x-item-type', type);
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => setIsDragging(true), 0);
   };
@@ -94,9 +95,14 @@ export function FileExplorer() {
 
   const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
-    const noteId = e.dataTransfer.getData('text/plain');
-    if (noteId) {
-      await moveNote(noteId, targetFolderId);
+    const id = e.dataTransfer.getData('application/x-item-id');
+    const type = e.dataTransfer.getData('application/x-item-type');
+    if (id) {
+      if (type === 'folder') {
+        await moveFolder(id, targetFolderId);
+      } else {
+        await moveNote(id, targetFolderId);
+      }
     }
     setDragOverFolderId(undefined);
     setIsDragging(false);
@@ -395,7 +401,7 @@ interface FileTreeNodeProps {
   depth: number;
   onToggle: (folderId: string) => void;
   onOpenNote: (noteId: string, title: string) => void;
-  onDragStart: (e: React.DragEvent, noteId: string) => void;
+  onDragStart: (e: React.DragEvent, id: string, type: 'note' | 'folder') => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, folderId: string | null) => void;
   onDragLeave: () => void;
@@ -454,6 +460,12 @@ function FileTreeNode({
           onTouchStart={(e) => onTouchStart(e, item)}
           onTouchEnd={onTouchEnd}
           onTouchMove={onTouchMove}
+          draggable={!isRenaming}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            onDragStart(e, item.id, 'folder');
+          }}
+          onDragEnd={onDragEnd}
           onDragOver={(e) => {
             e.stopPropagation();
             onDragOver(e, item.id);
@@ -537,7 +549,7 @@ function FileTreeNode({
       onTouchEnd={onTouchEnd}
       onTouchMove={onTouchMove}
       draggable={!isRenaming}
-      onDragStart={(e) => onDragStart(e, item.id)}
+      onDragStart={(e) => onDragStart(e, item.id, 'note')}
       onDragEnd={onDragEnd}
     >
       <File size={16} className={`shrink-0 ${isActive ? 'text-accent' : 'text-text-muted'}`} />
