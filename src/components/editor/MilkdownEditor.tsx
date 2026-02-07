@@ -175,6 +175,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   const { openNote, setTabDirty, tabs, activeTabId } = useWorkspaceStore();
   const { autoSave, autoSaveInterval } = useSettingsStore();
   const [loading, getInstance] = useInstance();
+  const editorNoteIdRef = useRef<string | null>(null);
 
   const activeTab = tabs.find(t => t.id === activeTabId);
 
@@ -238,6 +239,13 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     }
     debouncedSave(markdown);
   }, [activeTab, setTabDirty, debouncedSave]);
+
+  // Reset stale references when editor is about to be recreated
+  if (editorNoteIdRef.current !== null && editorNoteIdRef.current !== note.id) {
+    editorViewForAutocomplete = null;
+    editorInstanceForPlugin = null;
+  }
+  editorNoteIdRef.current = note.id;
 
   const { get } = useEditor((root) => {
     return Editor.make()
@@ -415,9 +423,18 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   }, [notes, openNote, createNote]);
 
   // Update content when note content changes externally
+  const contentSyncNoteIdRef = useRef<string | null>(null);
   useEffect(() => {
     const editor = getInstance();
     if (!editor || loading || !editorViewForAutocomplete) return;
+
+    // Skip the first sync after editor creation — defaultValueCtx already
+    // has the correct content, and calling replaceAll here triggers the
+    // listener's debounced serializer before editorViewCtx is fully ready.
+    if (contentSyncNoteIdRef.current !== note.id) {
+      contentSyncNoteIdRef.current = note.id;
+      return;
+    }
 
     try {
       const currentMarkdown = editor.action(getMarkdown());
