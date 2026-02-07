@@ -554,7 +554,7 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   );
 
   return (
-    <div ref={wrapperRef} className="milkdown-editor-wrapper h-full w-full overflow-auto">
+    <div ref={wrapperRef} className="milkdown-editor-wrapper h-full w-full overflow-y-auto overflow-x-hidden">
       <Milkdown />
       {autocomplete.show && (
         <WikilinkAutocomplete

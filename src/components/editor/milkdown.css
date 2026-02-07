@@ -9,6 +9,8 @@
   padding: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 @media (min-width: 768px) {
@@ -26,6 +28,9 @@
 .milkdown-editor-wrapper .milkdown .ProseMirror {
   color: var(--text-primary);
   caret-color: var(--accent);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 /* Headings */
@@ -184,10 +189,15 @@
 }
 
 /* Tables */
+.milkdown-editor-wrapper .tableWrapper {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 1em 0;
+}
+
 .milkdown-editor-wrapper table {
   border-collapse: collapse;
   width: 100%;
-  margin: 1em 0;
 }
 
 .milkdown-editor-wrapper th,
