@@ -4,6 +4,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import type { FileTreeItem } from '../../types';
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen, FilePlus, FolderPlus, Pencil, Trash2, Clock, FileText, X, Star } from 'lucide-react';
 import { ContextMenu, type ContextMenuItem } from '../common/ContextMenu';
+import { DeleteFolderModal } from './DeleteFolderModal';
 
 interface ContextMenuState {
   x: number;
@@ -12,7 +13,7 @@ interface ContextMenuState {
 }
 
 export function FileExplorer() {
-  const { notes, getFileTree, createNote, createFolder, toggleFolder, moveNote, moveFolder, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
+  const { notes, folders, getFileTree, createNote, createFolder, toggleFolder, moveNote, moveFolder, deleteNote, deleteFolder, renameNote, renameFolder } = useNoteStore();
   const { openNote, closeTab, setActiveTab, tabs, activeTabId } = useWorkspaceStore();
   const { showRecentNotes, favoriteNoteIds, recentCollapsed, favoritesCollapsed, notesCollapsed, toggleFavorite, setRecentCollapsed, setFavoritesCollapsed, setNotesCollapsed } = useSettingsStore();
   const { sidebarVisible, toggleSidebar } = useUIStore();
@@ -36,8 +37,26 @@ export function FileExplorer() {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [renameItem, setRenameItem] = useState<FileTreeItem | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<{ id: string; name: string } | null>(null);
 
   const tree = getFileTree();
+
+  // Collect all folder IDs nested under a given folder (inclusive)
+  const getDescendantFolderIds = useCallback((folderId: string): string[] => {
+    const ids = [folderId];
+    for (const f of folders) {
+      if (f.parentId === folderId) {
+        ids.push(...getDescendantFolderIds(f.id));
+      }
+    }
+    return ids;
+  }, [folders]);
+
+  // Get all notes inside a folder and its subfolders
+  const getNotesInFolder = useCallback((folderId: string) => {
+    const folderIds = new Set(getDescendantFolderIds(folderId));
+    return notes.filter(n => n.folderId && folderIds.has(n.folderId));
+  }, [notes, getDescendantFolderIds]);
 
   const handleOpenNote = useCallback((id: string, title: string) => {
     openNote(id, title);
@@ -176,15 +195,55 @@ export function FileExplorer() {
   const handleDelete = async (item: FileTreeItem) => {
     setContextMenu(null);
     if (item.type === 'note') {
-      // Close tab if open
       const tab = tabs.find(t => t.noteId === item.id);
       if (tab) {
         closeTab(tab.id);
       }
       await deleteNote(item.id);
     } else {
-      await deleteFolder(item.id);
+      const containedNotes = getNotesInFolder(item.id);
+      if (containedNotes.length > 0) {
+        setDeleteFolderTarget({ id: item.id, name: item.name });
+      } else {
+        // Delete subfolders then this folder
+        const descendantIds = getDescendantFolderIds(item.id);
+        for (const id of descendantIds.reverse()) {
+          await deleteFolder(id);
+        }
+      }
     }
+  };
+
+  const handleDeleteFolderAll = async () => {
+    if (!deleteFolderTarget) return;
+    const containedNotes = getNotesInFolder(deleteFolderTarget.id);
+    // Close tabs and delete notes
+    for (const note of containedNotes) {
+      const tab = tabs.find(t => t.noteId === note.id);
+      if (tab) closeTab(tab.id);
+      await deleteNote(note.id);
+    }
+    // Delete subfolders then this folder
+    const descendantIds = getDescendantFolderIds(deleteFolderTarget.id);
+    for (const id of descendantIds.reverse()) {
+      await deleteFolder(id);
+    }
+    setDeleteFolderTarget(null);
+  };
+
+  const handleMoveAndDeleteFolder = async (targetFolderId: string | null) => {
+    if (!deleteFolderTarget) return;
+    const containedNotes = getNotesInFolder(deleteFolderTarget.id);
+    // Move all notes to the target folder
+    for (const note of containedNotes) {
+      await moveNote(note.id, targetFolderId);
+    }
+    // Delete subfolders then this folder
+    const descendantIds = getDescendantFolderIds(deleteFolderTarget.id);
+    for (const id of descendantIds.reverse()) {
+      await deleteFolder(id);
+    }
+    setDeleteFolderTarget(null);
   };
 
   const getContextMenuItems = (item: FileTreeItem): ContextMenuItem[] => [
@@ -464,6 +523,21 @@ export function FileExplorer() {
           y={contextMenu.y}
           items={getContextMenuItems(contextMenu.item)}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {deleteFolderTarget && (
+        <DeleteFolderModal
+          folder={deleteFolderTarget}
+          noteCount={getNotesInFolder(deleteFolderTarget.id).length}
+          otherFolders={folders.filter(f => {
+            // Exclude the folder being deleted and its descendants
+            const excludeIds = new Set(getDescendantFolderIds(deleteFolderTarget.id));
+            return !excludeIds.has(f.id);
+          })}
+          onDeleteAll={handleDeleteFolderAll}
+          onMoveAndDelete={handleMoveAndDeleteFolder}
+          onClose={() => setDeleteFolderTarget(null)}
         />
       )}
     </div>

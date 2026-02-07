@@ -28,6 +28,9 @@ export function AppShell() {
     graphViewOpen,
     openGraphView,
     closeGraphView,
+    tasksViewOpen,
+    openTasksView,
+    closeTasksView,
     settingsOpen,
     openSettings,
     closeSettings,
@@ -59,6 +62,14 @@ export function AppShell() {
           openGraphView();
         }
       }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 't') {
+        e.preventDefault();
+        if (tasksViewOpen) {
+          closeTasksView();
+        } else {
+          openTasksView();
+        }
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === ',') {
         e.preventDefault();
         if (settingsOpen) {
@@ -71,7 +82,7 @@ export function AppShell() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [quickSwitcherOpen, openQuickSwitcher, closeQuickSwitcher, graphViewOpen, openGraphView, closeGraphView, settingsOpen, openSettings, closeSettings]);
+  }, [quickSwitcherOpen, openQuickSwitcher, closeQuickSwitcher, graphViewOpen, openGraphView, closeGraphView, tasksViewOpen, openTasksView, closeTasksView, settingsOpen, openSettings, closeSettings]);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden">

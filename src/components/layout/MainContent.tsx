@@ -3,16 +3,20 @@ import { MilkdownEditor } from '../editor/MilkdownEditor';
 import { ShareModal } from '../share/ShareModal';
 import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { FileText, PanelLeft, PanelRight, Share2, Loader2 } from 'lucide-react';
+import { FileText, PanelLeft, PanelRight, Share2, Loader2, CheckSquare } from 'lucide-react';
 
 const GraphView = lazy(() =>
   import('../graph/GraphView').then(m => ({ default: m.GraphView }))
 );
 
+const TasksView = lazy(() =>
+  import('../tasks/TasksView').then(m => ({ default: m.TasksView }))
+);
+
 export function MainContent() {
   const { tabs, activeTabId } = useWorkspaceStore();
   const { getNoteById, initialized } = useNoteStore();
-  const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView } = useUIStore();
+  const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView, tasksViewOpen, openTasksView, closeTasksView } = useUIStore();
   const [showShareModal, setShowShareModal] = useState(false);
   const isMobile = useIsMobile();
 
@@ -29,6 +33,21 @@ export function MainContent() {
           </div>
         }>
           <GraphView onClose={closeGraphView} />
+        </Suspense>
+      </main>
+    );
+  }
+
+  // Show tasks view if open
+  if (tasksViewOpen) {
+    return (
+      <main className="flex flex-col flex-1 min-w-0 h-full bg-bg-primary">
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-full">
+            <Loader2 size={32} className="animate-spin text-accent" />
+          </div>
+        }>
+          <TasksView onClose={closeTasksView} />
         </Suspense>
       </main>
     );
@@ -54,6 +73,13 @@ export function MainContent() {
           <div className="flex-1" />
         )}
         <div className="flex items-center ml-auto self-center">
+          <button
+            onClick={tasksViewOpen ? closeTasksView : openTasksView}
+            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+            title="Tasks (Cmd+Shift+T)"
+          >
+            <CheckSquare size={16} />
+          </button>
           {activeNote && (
             <button
               onClick={() => setShowShareModal(true)}

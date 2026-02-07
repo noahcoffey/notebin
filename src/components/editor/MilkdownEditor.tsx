@@ -172,7 +172,7 @@ interface MilkdownEditorProps {
 
 function MilkdownEditorInner({ note }: MilkdownEditorProps) {
   const { updateNote, notes, createNote } = useNoteStore();
-  const { openNote, setTabDirty, tabs, activeTabId } = useWorkspaceStore();
+  const { openNote, setTabDirty, tabs, activeTabId, setEditorScrollCallback } = useWorkspaceStore();
   const { autoSave, autoSaveInterval } = useSettingsStore();
   const [loading, getInstance] = useInstance();
   const editorNoteIdRef = useRef<string | null>(null);
@@ -266,6 +266,23 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
             const view = ctx.get(editorViewCtx);
             editorViewForAutocomplete = view;
             view.focus();
+            // Register scroll callback for external navigation (Tasks, Outline)
+            setEditorScrollCallback((pos: number) => {
+              try {
+                const resolvedPos = view.state.doc.resolve(Math.min(pos, view.state.doc.content.size));
+                view.dispatch(view.state.tr.setSelection(
+                  view.state.selection.constructor.near(resolvedPos)
+                ));
+                view.focus();
+                const coords = view.coordsAtPos(Math.min(pos, view.state.doc.content.size));
+                const wrapper = view.dom.closest('.milkdown-editor-wrapper');
+                if (wrapper) {
+                  wrapper.scrollTo({ top: coords.top - wrapper.getBoundingClientRect().top + wrapper.scrollTop - 100, behavior: 'smooth' });
+                }
+              } catch {
+                // Position may be out of range if note content changed
+              }
+            });
           });
       })
       .use(commonmark)
@@ -290,8 +307,9 @@ function MilkdownEditorInner({ note }: MilkdownEditorProps) {
     return () => {
       editorInstanceForPlugin = null;
       editorViewForAutocomplete = null;
+      setEditorScrollCallback(null);
     };
-  }, []);
+  }, [setEditorScrollCallback]);
 
   // Autocomplete detection - watch for [[ pattern using DOM events
   useEffect(() => {
