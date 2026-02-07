@@ -8,6 +8,7 @@ const mockUseWorkspaceStore = vi.fn();
 
 vi.mock('../../store', () => ({
   useWorkspaceStore: (...args: unknown[]) => mockUseWorkspaceStore(...args),
+  useUIStore: () => ({ presentationMode: false }),
 }));
 
 describe('TabBar', () => {
