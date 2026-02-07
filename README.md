@@ -1,4 +1,4 @@
-# noteb.in
+# notebin
 
 ![Tests](https://github.com/noahcoffey/notebin/actions/workflows/test.yml/badge.svg)
 
