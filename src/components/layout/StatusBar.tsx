@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useWorkspaceStore, useNoteStore } from '../../store';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export function StatusBar() {
   const { activeTabId, tabs } = useWorkspaceStore();
   const { getNoteById } = useNoteStore();
 
+  const isMobile = useIsMobile();
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
   const isDirty = activeTab?.isDirty ?? false;
@@ -45,12 +47,14 @@ export function StatusBar() {
             {isDirty ? 'Unsaved' : 'Saved'}
           </span>
         )}
-        <div className="hidden md:flex items-center gap-3">
-          <ShortcutHint keys={['⌘', 'O']} label="Quick Open" />
-          <ShortcutHint keys={['⌘', 'G']} label="Graph" />
-          <ShortcutHint keys={['⌘', 'S']} label="Save" />
-          <ShortcutHint keys={['⌘', ',']} label="Settings" />
-        </div>
+        {!isMobile && (
+          <div className="flex items-center gap-3">
+            <ShortcutHint keys={['⌘', 'O']} label="Quick Open" />
+            <ShortcutHint keys={['⌘', 'G']} label="Graph" />
+            <ShortcutHint keys={['⌘', 'S']} label="Save" />
+            <ShortcutHint keys={['⌘', ',']} label="Settings" />
+          </div>
+        )}
       </div>
     </footer>
   );

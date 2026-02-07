@@ -47,16 +47,17 @@ export function MainContent() {
             <PanelLeft size={16} />
           </button>
         )}
-        <div className="hidden md:block flex-1 min-w-0">
-          <TabBar />
-        </div>
-        {/* On mobile, show active note title instead of tab bar */}
-        {isMobile && activeNote && (
+        {!isMobile ? (
+          <div className="flex-1 min-w-0">
+            <TabBar />
+          </div>
+        ) : activeNote ? (
           <div className="flex-1 min-w-0 px-2 text-sm text-text-primary truncate">
             {activeNote.title}
           </div>
+        ) : (
+          <div className="flex-1" />
         )}
-        {isMobile && !activeNote && <div className="flex-1" />}
         <div className="flex items-center ml-auto">
           {activeNote && (
             <button

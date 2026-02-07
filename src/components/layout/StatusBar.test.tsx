@@ -10,6 +10,10 @@ vi.mock('../../store', () => ({
   useNoteStore: (...args: unknown[]) => mockUseNoteStore(...args),
 }));
 
+vi.mock('../../hooks/useIsMobile', () => ({
+  useIsMobile: () => false,
+}));
+
 describe('StatusBar', () => {
   beforeEach(() => {
     mockUseWorkspaceStore.mockReset();
