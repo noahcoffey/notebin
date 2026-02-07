@@ -13,11 +13,21 @@ export interface ImportProgress {
 
 export async function importNotes(
   data: ImportResult,
-  onProgress: (progress: ImportProgress) => void
+  onProgress: (progress: ImportProgress) => void,
+  parentFolderId?: string | null
 ): Promise<{ notesCreated: number; foldersCreated: number; skipped: number }> {
   const folderMap = new Map<string, string>(); // path → id
   let foldersCreated = 0;
   let notesCreated = 0;
+
+  // Look up parent folder path prefix if importing into an existing folder
+  let parentPathPrefix = '';
+  if (parentFolderId) {
+    const parentFolder = await folderStorage.getById(parentFolderId);
+    if (parentFolder) {
+      parentPathPrefix = parentFolder.path;
+    }
+  }
 
   // Phase 1: Create folders top-down
   for (let i = 0; i < data.folders.length; i++) {
@@ -29,11 +39,18 @@ export async function importNotes(
       currentItem: folderDef.name,
     });
 
-    const parentId = folderDef.parentPath ? folderMap.get(folderDef.parentPath) ?? null : null;
+    let parentId: string | null;
+    if (folderDef.parentPath) {
+      parentId = folderMap.get(folderDef.parentPath) ?? null;
+    } else {
+      // Root-level imported folder: use parentFolderId if provided
+      parentId = parentFolderId ?? null;
+    }
+
     const folder = await folderStorage.create({
       name: folderDef.name,
       parentId,
-      path: folderDef.path,
+      path: parentPathPrefix + folderDef.path,
     });
     folderMap.set(folderDef.path, folder.id);
     foldersCreated++;
@@ -49,12 +66,19 @@ export async function importNotes(
       currentItem: noteDef.title,
     });
 
-    const folderId = noteDef.folderPath ? folderMap.get(noteDef.folderPath) ?? null : null;
+    let folderId: string | null;
+    if (noteDef.folderPath) {
+      folderId = folderMap.get(noteDef.folderPath) ?? null;
+    } else {
+      // Root-level imported note: use parentFolderId if provided
+      folderId = parentFolderId ?? null;
+    }
+
     const note = await noteStorage.create({
       title: noteDef.title,
       content: noteDef.content,
       folderId,
-      path: noteDef.path,
+      path: parentPathPrefix + noteDef.path,
     });
 
     // Update frontmatter and metadata
