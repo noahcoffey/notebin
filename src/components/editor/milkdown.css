@@ -204,6 +204,7 @@
 .milkdown-editor-wrapper table {
   border-collapse: collapse;
   width: 100%;
+  background: var(--bg-primary);
 }
 
 .milkdown-editor-wrapper th,
@@ -211,6 +212,7 @@
   border: 1px solid var(--border-primary);
   padding: 0.5em 1em;
   text-align: left;
+  background: var(--bg-primary);
 }
 
 .milkdown-editor-wrapper th {
@@ -218,7 +220,8 @@
   font-weight: 600;
 }
 
-.milkdown-editor-wrapper tr:hover {
+.milkdown-editor-wrapper tr:hover td,
+.milkdown-editor-wrapper tr:hover th {
   background: var(--bg-hover);
 }
 
