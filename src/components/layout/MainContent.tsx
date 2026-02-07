@@ -57,24 +57,26 @@ export function MainContent() {
           </div>
         )}
         {isMobile && !activeNote && <div className="flex-1" />}
-        {activeNote && (
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            title="Share note"
-          >
-            <Share2 size={16} />
-          </button>
-        )}
-        {(!rightPanelVisible || isMobile) && (
-          <button
-            onClick={toggleRightPanel}
-            className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            title="Show backlinks panel"
-          >
-            <PanelRight size={16} />
-          </button>
-        )}
+        <div className="flex items-center ml-auto">
+          {activeNote && (
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+              title="Share note"
+            >
+              <Share2 size={16} />
+            </button>
+          )}
+          {(!rightPanelVisible || isMobile) && (
+            <button
+              onClick={toggleRightPanel}
+              className="p-2.5 md:p-1.5 m-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+              title="Show backlinks panel"
+            >
+              <PanelRight size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       {showShareModal && activeNote && (
