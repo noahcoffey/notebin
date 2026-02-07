@@ -3,12 +3,12 @@ import { useUIStore, useAuthStore } from '../../store';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileExplorer } from '../sidebar/FileExplorer';
 import { SearchPanel } from '../sidebar/SearchPanel';
-import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut } from 'lucide-react';
+import { PanelLeftClose, Search, Settings, GitBranch, FolderTree, LogOut, Trash2 } from 'lucide-react';
 
 type SidebarTab = 'files' | 'search';
 
 export function Sidebar() {
-  const { sidebarVisible, sidebarWidth, toggleSidebar, openSettings, openGraphView } = useUIStore();
+  const { sidebarVisible, sidebarWidth, toggleSidebar, openSettings, openGraphView, openTrashView } = useUIStore();
   const { signOut } = useAuthStore();
   const [activeTab, setActiveTab] = useState<SidebarTab>('files');
   const isMobile = useIsMobile();
@@ -78,6 +78,13 @@ export function Sidebar() {
           title="Settings (Cmd+,)"
         >
           <Settings size={16} />
+        </button>
+        <button
+          onClick={openTrashView}
+          className="p-2.5 md:p-1.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+          title="Trash"
+        >
+          <Trash2 size={16} />
         </button>
         <button
           onClick={signOut}

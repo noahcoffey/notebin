@@ -16,7 +16,7 @@ const ImportModal = lazy(() =>
 );
 
 export function AppShell() {
-  const { loadNotes, loadFolders } = useNoteStore();
+  const { loadNotes, loadFolders, loadTrash } = useNoteStore();
   const {
     sidebarVisible,
     rightPanelVisible,
@@ -42,7 +42,8 @@ export function AppShell() {
   useEffect(() => {
     loadNotes();
     loadFolders();
-  }, [loadNotes, loadFolders]);
+    loadTrash();
+  }, [loadNotes, loadFolders, loadTrash]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

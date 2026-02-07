@@ -203,4 +203,24 @@ export const noteStorage = {
 
     if (error) throw error;
   },
+
+  async getTrash(): Promise<Note[]> {
+    const { data: rows, error } = await supabase
+      .from('notes')
+      .select()
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false });
+
+    if (error) throw error;
+    return (rows || []).map(dbToNote);
+  },
+
+  async restore(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notes')
+      .update({ deleted_at: null })
+      .eq('id', id);
+
+    if (error) throw error;
+  },
 };

@@ -5,6 +5,7 @@ import { noteStorage, folderStorage } from '../services/storage';
 interface NoteState {
   notes: Note[];
   folders: Folder[];
+  trashedNotes: Note[];
   loading: boolean;
   initialized: boolean;
   error: string | null;
@@ -12,9 +13,13 @@ interface NoteState {
 
   loadNotes: () => Promise<void>;
   loadFolders: () => Promise<void>;
+  loadTrash: () => Promise<void>;
   createNote: (title: string, folderId?: string | null) => Promise<Note>;
   updateNote: (id: string, data: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  restoreNote: (id: string) => Promise<void>;
+  permanentlyDeleteNote: (id: string) => Promise<void>;
+  emptyTrash: () => Promise<void>;
   renameNote: (id: string, newTitle: string) => Promise<void>;
   moveNote: (noteId: string, targetFolderId: string | null) => Promise<void>;
   moveFolder: (folderId: string, targetParentId: string | null) => Promise<void>;
@@ -29,6 +34,7 @@ interface NoteState {
 export const useNoteStore = create<NoteState>((set, get) => ({
   notes: [],
   folders: [],
+  trashedNotes: [],
   loading: false,
   initialized: false,
   error: null,
@@ -48,6 +54,15 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const folders = await folderStorage.getAll();
       set({ folders });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+
+  loadTrash: async () => {
+    try {
+      const trashedNotes = await noteStorage.getTrash();
+      set({ trashedNotes });
     } catch (error) {
       set({ error: (error as Error).message });
     }
@@ -77,10 +92,39 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   deleteNote: async (id: string) => {
+    const note = get().notes.find(n => n.id === id);
     await noteStorage.delete(id);
     set(state => ({
       notes: state.notes.filter(n => n.id !== id),
+      trashedNotes: note
+        ? [{ ...note, deletedAt: new Date() }, ...state.trashedNotes]
+        : state.trashedNotes,
     }));
+  },
+
+  restoreNote: async (id: string) => {
+    const note = get().trashedNotes.find(n => n.id === id);
+    if (!note) return;
+    await noteStorage.restore(id);
+    set(state => ({
+      trashedNotes: state.trashedNotes.filter(n => n.id !== id),
+      notes: [...state.notes, { ...note, deletedAt: undefined }],
+    }));
+  },
+
+  permanentlyDeleteNote: async (id: string) => {
+    await noteStorage.hardDelete(id);
+    set(state => ({
+      trashedNotes: state.trashedNotes.filter(n => n.id !== id),
+    }));
+  },
+
+  emptyTrash: async () => {
+    const { trashedNotes } = get();
+    for (const note of trashedNotes) {
+      await noteStorage.hardDelete(note.id);
+    }
+    set({ trashedNotes: [] });
   },
 
   renameNote: async (id: string, newTitle: string) => {

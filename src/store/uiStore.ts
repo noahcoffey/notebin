@@ -15,6 +15,7 @@ interface UIState {
   settingsOpen: boolean;
   graphViewOpen: boolean;
   tasksViewOpen: boolean;
+  trashViewOpen: boolean;
   importModalOpen: boolean;
 
   toggleSidebar: () => void;
@@ -29,6 +30,8 @@ interface UIState {
   closeGraphView: () => void;
   openTasksView: () => void;
   closeTasksView: () => void;
+  openTrashView: () => void;
+  closeTrashView: () => void;
   openImportModal: () => void;
   closeImportModal: () => void;
 }
@@ -44,6 +47,7 @@ export const useUIStore = create<UIState>()(
       settingsOpen: false,
       graphViewOpen: false,
       tasksViewOpen: false,
+      trashViewOpen: false,
       importModalOpen: false,
 
       toggleSidebar: () => set(state => ({ sidebarVisible: !state.sidebarVisible })),
@@ -54,10 +58,12 @@ export const useUIStore = create<UIState>()(
       closeQuickSwitcher: () => set({ quickSwitcherOpen: false }),
       openSettings: () => set({ settingsOpen: true }),
       closeSettings: () => set({ settingsOpen: false }),
-      openGraphView: () => set({ graphViewOpen: true, tasksViewOpen: false }),
+      openGraphView: () => set({ graphViewOpen: true, tasksViewOpen: false, trashViewOpen: false }),
       closeGraphView: () => set({ graphViewOpen: false }),
-      openTasksView: () => set({ tasksViewOpen: true, graphViewOpen: false }),
+      openTasksView: () => set({ tasksViewOpen: true, graphViewOpen: false, trashViewOpen: false }),
       closeTasksView: () => set({ tasksViewOpen: false }),
+      openTrashView: () => set({ trashViewOpen: true, graphViewOpen: false, tasksViewOpen: false }),
+      closeTrashView: () => set({ trashViewOpen: false }),
       openImportModal: () => set({ importModalOpen: true }),
       closeImportModal: () => set({ importModalOpen: false }),
     }),

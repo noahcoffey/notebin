@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { MilkdownEditor } from '../editor/MilkdownEditor';
 import { ShareModal } from '../share/ShareModal';
 import { useWorkspaceStore, useNoteStore, useUIStore } from '../../store';
@@ -13,15 +13,28 @@ const TasksView = lazy(() =>
   import('../tasks/TasksView').then(m => ({ default: m.TasksView }))
 );
 
+const TrashView = lazy(() =>
+  import('../trash/TrashView').then(m => ({ default: m.TrashView }))
+);
+
 export function MainContent() {
   const { tabs, activeTabId } = useWorkspaceStore();
   const { getNoteById, initialized } = useNoteStore();
-  const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView, tasksViewOpen, openTasksView, closeTasksView } = useUIStore();
+  const { sidebarVisible, rightPanelVisible, toggleSidebar, toggleRightPanel, graphViewOpen, closeGraphView, tasksViewOpen, openTasksView, closeTasksView, trashViewOpen, closeTrashView } = useUIStore();
   const [showShareModal, setShowShareModal] = useState(false);
   const isMobile = useIsMobile();
 
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
+
+  // Close trash view when activeTabId *changes* (e.g. note opened from sidebar)
+  const prevTabId = useRef(activeTabId);
+  useEffect(() => {
+    if (activeTabId !== prevTabId.current && trashViewOpen) {
+      closeTrashView();
+    }
+    prevTabId.current = activeTabId;
+  }, [activeTabId, trashViewOpen, closeTrashView]);
 
   // Show graph view if open
   if (graphViewOpen) {
@@ -48,6 +61,21 @@ export function MainContent() {
           </div>
         }>
           <TasksView onClose={closeTasksView} />
+        </Suspense>
+      </main>
+    );
+  }
+
+  // Show trash view if open
+  if (trashViewOpen) {
+    return (
+      <main className="flex flex-col flex-1 min-w-0 h-full bg-bg-primary">
+        <Suspense fallback={
+          <div className="flex items-center justify-center h-full">
+            <Loader2 size={32} className="animate-spin text-accent" />
+          </div>
+        }>
+          <TrashView onClose={closeTrashView} />
         </Suspense>
       </main>
     );
