@@ -146,6 +146,10 @@ body {
   overflow: hidden;
 }
 
+body {
+  touch-action: pan-x pan-y;
+}
+
 button, a, input, select, textarea {
   touch-action: manipulation;
 }
