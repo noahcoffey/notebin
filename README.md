@@ -1,5 +1,7 @@
 # noteb.in
 
+![Tests](https://github.com/noahcoffey/notebin/actions/workflows/test.yml/badge.svg)
+
 A markdown note-taking app with wiki-style linking, built for the web.
 
 ## Features
