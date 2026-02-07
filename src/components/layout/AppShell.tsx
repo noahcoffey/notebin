@@ -69,7 +69,7 @@ export function AppShell() {
   }, [quickSwitcherOpen, openQuickSwitcher, closeQuickSwitcher, graphViewOpen, openGraphView, closeGraphView, settingsOpen, openSettings, closeSettings]);
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden">
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         {/* Mobile backdrop for sidebar */}
