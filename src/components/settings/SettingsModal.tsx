@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useSettingsStore, useUIStore, useNoteStore } from '../../store';
-import { X, Download, Upload, Trash2 } from 'lucide-react';
+import { X, Download, Upload, Trash2, FolderOpen } from 'lucide-react';
 
 type SettingsTab = 'editor' | 'data';
 
 export function SettingsModal() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('editor');
-  const { closeSettings } = useUIStore();
+  const { closeSettings, openImportModal } = useUIStore();
   const {
     editorFontSize,
     editorLineHeight,
@@ -274,6 +274,16 @@ export function SettingsModal() {
                     >
                       <Upload size={16} />
                       Import Backup
+                    </button>
+                    <p className="text-xs text-text-muted pt-2">
+                      Import markdown notes from an Obsidian vault.
+                    </p>
+                    <button
+                      onClick={() => { closeSettings(); openImportModal(); }}
+                      className="flex items-center gap-2 px-4 py-2 bg-bg-tertiary text-text-primary border border-border-primary rounded hover:bg-bg-hover transition-colors"
+                    >
+                      <FolderOpen size={16} />
+                      Import from Obsidian
                     </button>
                   </div>
                 </div>

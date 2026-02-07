@@ -14,6 +14,7 @@ interface UIState {
   quickSwitcherOpen: boolean;
   settingsOpen: boolean;
   graphViewOpen: boolean;
+  importModalOpen: boolean;
 
   toggleSidebar: () => void;
   setSidebarWidth: (width: number) => void;
@@ -25,6 +26,8 @@ interface UIState {
   closeSettings: () => void;
   openGraphView: () => void;
   closeGraphView: () => void;
+  openImportModal: () => void;
+  closeImportModal: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -37,6 +40,7 @@ export const useUIStore = create<UIState>()(
       quickSwitcherOpen: false,
       settingsOpen: false,
       graphViewOpen: false,
+      importModalOpen: false,
 
       toggleSidebar: () => set(state => ({ sidebarVisible: !state.sidebarVisible })),
       setSidebarWidth: (width: number) => set({ sidebarWidth: Math.max(200, Math.min(400, width)) }),
@@ -48,6 +52,8 @@ export const useUIStore = create<UIState>()(
       closeSettings: () => set({ settingsOpen: false }),
       openGraphView: () => set({ graphViewOpen: true }),
       closeGraphView: () => set({ graphViewOpen: false }),
+      openImportModal: () => set({ importModalOpen: true }),
+      closeImportModal: () => set({ importModalOpen: false }),
     }),
     {
       name: 'noted-ui',

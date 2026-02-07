@@ -11,6 +11,10 @@ const SettingsModal = lazy(() =>
   import('../settings/SettingsModal').then(m => ({ default: m.SettingsModal }))
 );
 
+const ImportModal = lazy(() =>
+  import('../settings/ImportModal').then(m => ({ default: m.ImportModal }))
+);
+
 export function AppShell() {
   const { loadNotes, loadFolders } = useNoteStore();
   const {
@@ -27,6 +31,7 @@ export function AppShell() {
     settingsOpen,
     openSettings,
     closeSettings,
+    importModalOpen,
   } = useUIStore();
 
   const isMobile = useIsMobile();
@@ -94,6 +99,11 @@ export function AppShell() {
       {settingsOpen && (
         <Suspense fallback={null}>
           <SettingsModal />
+        </Suspense>
+      )}
+      {importModalOpen && (
+        <Suspense fallback={null}>
+          <ImportModal />
         </Suspense>
       )}
     </div>

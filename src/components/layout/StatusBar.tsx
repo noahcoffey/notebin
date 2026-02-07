@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useWorkspaceStore, useNoteStore } from '../../store';
 
 export function StatusBar() {
@@ -6,10 +7,24 @@ export function StatusBar() {
 
   const activeTab = tabs.find(t => t.id === activeTabId);
   const activeNote = activeTab ? getNoteById(activeTab.noteId) : undefined;
+  const isDirty = activeTab?.isDirty ?? false;
+  const anyDirty = tabs.some(t => t.isDirty);
 
   const wordCount = activeNote?.metadata?.wordCount || 0;
   const charCount = activeNote?.content.length || 0;
   const linkCount = activeNote?.metadata?.outgoingLinks?.length || 0;
+
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    if (!anyDirty) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [anyDirty]);
 
   return (
     <footer className="flex items-center justify-between px-4 py-1 bg-bg-secondary border-t border-border-primary text-xs text-text-muted">
@@ -24,11 +39,18 @@ export function StatusBar() {
           <span>No note selected</span>
         )}
       </div>
-      <div className="hidden md:flex items-center gap-3">
-        <ShortcutHint keys={['⌘', 'O']} label="Quick Open" />
-        <ShortcutHint keys={['⌘', 'G']} label="Graph" />
-        <ShortcutHint keys={['⌘', 'S']} label="Save" />
-        <ShortcutHint keys={['⌘', ',']} label="Settings" />
+      <div className="flex items-center gap-3">
+        {activeNote && (
+          <span className={isDirty ? 'text-text-muted' : 'text-text-faint'}>
+            {isDirty ? 'Unsaved' : 'Saved'}
+          </span>
+        )}
+        <div className="hidden md:flex items-center gap-3">
+          <ShortcutHint keys={['⌘', 'O']} label="Quick Open" />
+          <ShortcutHint keys={['⌘', 'G']} label="Graph" />
+          <ShortcutHint keys={['⌘', 'S']} label="Save" />
+          <ShortcutHint keys={['⌘', ',']} label="Settings" />
+        </div>
       </div>
     </footer>
   );
