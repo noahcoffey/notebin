@@ -1,16 +1,18 @@
 import { useState, useRef, useCallback } from 'react';
 import { X, FolderOpen, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { useUIStore } from '../../store';
-import { parseObsidianVault, importNotes } from '../../services/import';
+import { parseObsidianVault, parseBearExport, importNotes } from '../../services/import';
 import type { ImportResult, ImportProgress } from '../../services/import';
 
 type Step = 'source' | 'preview' | 'progress' | 'results';
+type ImportSource = 'obsidian' | 'bear';
 
 export function ImportModal() {
   const { closeImportModal } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('source');
+  const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const [parseResult, setParseResult] = useState<ImportResult | null>(null);
   const [vaultName, setVaultName] = useState('');
   const [progress, setProgress] = useState<ImportProgress | null>(null);
@@ -24,13 +26,15 @@ export function ImportModal() {
 
     setError(null);
 
-    // Get vault name from the first file's root directory
+    // Get folder name from the first file's root directory
     const firstPath = files[0].webkitRelativePath;
     const rootName = firstPath.split('/')[0];
     setVaultName(rootName);
 
     try {
-      const result = await parseObsidianVault(files);
+      const result = importSource === 'bear'
+        ? await parseBearExport(files)
+        : await parseObsidianVault(files);
       if (result.notes.length === 0) {
         setError('No markdown files found in the selected folder.');
         return;
@@ -38,8 +42,14 @@ export function ImportModal() {
       setParseResult(result);
       setStep('preview');
     } catch {
-      setError('Failed to read vault files. Please try again.');
+      setError('Failed to read files. Please try again.');
     }
+  }, [importSource]);
+
+  const handleSourceSelect = useCallback((source: ImportSource) => {
+    setImportSource(source);
+    // Need a microtask so the state update for importSource is picked up by handleFolderSelect
+    setTimeout(() => fileInputRef.current?.click(), 0);
   }, []);
 
   const handleImport = useCallback(async () => {
@@ -63,6 +73,8 @@ export function ImportModal() {
   const handleBackdropClick = () => {
     if (canDismiss) closeImportModal();
   };
+
+  const sourceLabel = importSource === 'bear' ? 'Bear Export' : 'Vault';
 
   return (
     <div
@@ -105,7 +117,7 @@ export function ImportModal() {
                 Choose an import source to bring your existing notes into the app.
               </p>
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => handleSourceSelect('obsidian')}
                 className="w-full flex items-center gap-3 p-4 border border-border-primary rounded-lg hover:bg-bg-hover transition-colors text-left"
               >
                 <div className="p-2 bg-bg-tertiary rounded-lg">
@@ -114,6 +126,19 @@ export function ImportModal() {
                 <div>
                   <div className="text-sm font-medium text-text-primary">Obsidian Vault</div>
                   <div className="text-xs text-text-muted">Select your vault folder to import markdown notes</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleSourceSelect('bear')}
+                className="w-full flex items-center gap-3 p-4 border border-border-primary rounded-lg hover:bg-bg-hover transition-colors text-left"
+              >
+                <div className="p-2 bg-bg-tertiary rounded-lg">
+                  <FolderOpen size={20} className="text-text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-text-primary">Bear</div>
+                  <div className="text-xs text-text-muted">Select a folder of exported Bear markdown notes</div>
                 </div>
               </button>
 
@@ -130,7 +155,7 @@ export function ImportModal() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="text-sm font-medium text-text-primary">
-                  Vault: {vaultName}
+                  {sourceLabel}: {vaultName}
                 </div>
                 <div className="text-sm text-text-secondary space-y-1">
                   <p>{parseResult.notes.length} note{parseResult.notes.length !== 1 ? 's' : ''}</p>
@@ -171,7 +196,7 @@ export function ImportModal() {
 
               <div className="flex gap-2 justify-end">
                 <button
-                  onClick={() => { setStep('source'); setParseResult(null); setError(null); }}
+                  onClick={() => { setStep('source'); setParseResult(null); setError(null); setImportSource(null); }}
                   className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
                 >
                   Cancel
